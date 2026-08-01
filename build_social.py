@@ -181,7 +181,17 @@ def render_photo(w=W, h=H, out="social-card-photo.png"):
     bg = Image.new("RGB", (w, h), src.getpixel((20, 20)))
     bg.paste(im, ((w - im.width) // 2, 0))
     bg.save(out, optimize=True)
-    print(f"wrote {out} ({w}x{h})")
+    print(f"wrote {out} ({w}x{h}, {len(open(out,'rb').read())//1024} KB)")
+
+    # WhatsApp silently drops og:image over roughly 300 KB, so also emit a JPEG
+    # under that ceiling. This is the file the share tags actually point at.
+    jpg = out.rsplit(".", 1)[0] + ".jpg"
+    for q in (88, 82, 76, 70, 64):
+        bg.save(jpg, quality=q, optimize=True, progressive=True)
+        size = len(open(jpg, "rb").read())
+        if size < 290_000:
+            break
+    print(f"wrote {jpg} ({w}x{h}, {size//1024} KB, quality {q})")
 
 
 def render(w=W, h=H, out="social-card.png"):

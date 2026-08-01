@@ -95,7 +95,8 @@ hardcoded with provenance in the `build_data.py` header.
 | `apple-touch-icon.png` | iOS home screen icon, flattened to an opaque background |
 | `android-chrome-192x192.png`, `android-chrome-512x512.png` | Android and PWA icons |
 | `site.webmanifest` | Web app manifest, relative paths for project page hosting |
-| `social-card-photo.png` | Open Graph share image, photograph only, 1200 x 630, current default |
+| `social-card-photo.jpg` | Open Graph share image, photograph only, 1200 x 630, current default |
+| `social-card-photo.png` | Lossless version of the same card |
 | `social-card-plate.png` | Open Graph share image, photographic plate variant, 1200 x 630 |
 | `social-card.png` | Open Graph share image, conditional fan variant, 1200 x 630 |
 | `social-card-github.png` | Repository social preview, 1280 x 640 |

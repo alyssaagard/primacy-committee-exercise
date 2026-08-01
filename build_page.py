@@ -24,7 +24,7 @@ SITE_URL = "https://USERNAME.github.io/primacy-committee-exercise"
 # Which share card og:image points at. Both are built by build_social.py:
 #   social-card-plate.png  the photographic plate
 #   social-card.png        the conditional fan
-SOCIAL_CARD = "social-card-photo.png"
+SOCIAL_CARD = "social-card-photo.jpg"
 
 HERE = pathlib.Path(__file__).resolve().parent
 TEMPLATE = HERE / "template.html"
@@ -33,6 +33,7 @@ OUT = HERE / "index.html"
 TOKEN = "/*__PAYLOAD__*/null"
 URL_TOKEN = "__SITE_URL__"
 CARD_TOKEN = "__SOCIAL_CARD__"
+TYPE_TOKEN = "__SOCIAL_CARD_TYPE__"
 
 
 def main():
@@ -59,6 +60,8 @@ def main():
     html = html.replace(TOKEN, payload, 1)
     html = html.replace(URL_TOKEN, site)
     html = html.replace(CARD_TOKEN, card)
+    mime = "image/jpeg" if card.lower().endswith((".jpg", ".jpeg")) else "image/png"
+    html = html.replace(TYPE_TOKEN, mime)
     OUT.write_text(html, encoding="utf-8")
     print(f"wrote {OUT} ({os.path.getsize(OUT)/1024:.0f} KB), site {site}, card {card}")
 
