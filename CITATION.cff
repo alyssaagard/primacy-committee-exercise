@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: If you use or reference this exercise, please cite it as below.
+title: "Committee Exercise: The Primacy Premium"
+authors:
+  - family-names: Agard
+    given-names: Alyssa
+version: 1.0.0
+date-released: "2026-08-01"
+license: CC-BY-NC-4.0
+repository-code: "https://github.com/USERNAME/REPOSITORY"
+abstract: >-
+  A two sided conditional forecasting wargame on Chinese military primacy,
+  2026 to 2035, with sealed simultaneous play, publication lag fog, and
+  emulator served forecast fans. The interactive layer of The Primacy
+  Premium research project.
+keywords:
+  - conditional forecasting
+  - wargaming
+  - defense policy
+  - scenario analysis
+  - surrogate modeling
+  - emulation
+  - quantitative research

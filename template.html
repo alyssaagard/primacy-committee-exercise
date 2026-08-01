@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Committee Exercise · The Primacy Premium</title>
+<meta name="description" content="A two sided conditional forecasting wargame on Chinese military primacy, 2026 to 2035, with sealed simultaneous play, publication lag fog, and emulator served forecast fans.">
+<meta property="og:title" content="Committee Exercise · The Primacy Premium">
+<meta property="og:description" content="Two committees, five periods, sealed simultaneous stances. Indicators publish late and partial. Scoring is not zero sum.">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<style>
+  :root{
+    --page:#fff8fd; --panel:#fce8f4; --alt:#f6f0f4;
+    --ink:#241d26; --muted:#6d5a66; --rule:#9c6f86;
+    --blue:#31456e; --red:#7d3644; --band:rgba(156,111,134,.16);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--page);color:var(--ink);
+       font-family:"Times New Roman",Times,serif;font-size:17px;line-height:1.55}
+  .wrap{max-width:1060px;margin:0 auto;padding:2.2rem 1.2rem 4rem}
+  .sc{font-variant:small-caps;letter-spacing:.08em}
+  .rule2{border:0;border-top:4px double var(--rule);margin:1.1rem 0}
+  .rule1{border:0;border-top:1px solid var(--rule);margin:.9rem 0}
+  header.front{text-align:center;margin-bottom:1.4rem}
+  .eyebrow{font-variant:small-caps;letter-spacing:.28em;color:var(--muted);font-size:.85rem}
+  h1{font-size:2.35rem;font-weight:400;margin:.35rem 0 .15rem;letter-spacing:.01em}
+  .subtitle{font-style:italic;color:var(--muted);margin:0 0 .6rem}
+  .byline{font-variant:small-caps;letter-spacing:.14em;font-size:.95rem}
+  h2{font-size:1.15rem;font-weight:400;font-variant:small-caps;letter-spacing:.12em;margin:1.6rem 0 .5rem}
+  h3{font-size:1rem;font-weight:700;margin:1.1rem 0 .35rem}
+  p{margin:.5rem 0}
+  .screen{display:none}
+  .screen.active{display:block}
+  .panel{background:var(--panel);border:1px solid var(--rule);padding:1.1rem 1.3rem;margin:1rem 0}
+  .panel.alt{background:var(--alt)}
+  .side-banner{display:flex;justify-content:space-between;align-items:baseline;
+               border-top:4px double var(--rule);border-bottom:4px double var(--rule);
+               padding:.45rem .2rem;margin:.8rem 0 1rem}
+  .side-banner .who{font-variant:small-caps;letter-spacing:.2em;font-size:1.15rem}
+  .seat-blue .who{color:var(--blue)} .seat-red .who{color:var(--red)}
+  .period-tag{font-variant:small-caps;letter-spacing:.14em;color:var(--muted)}
+  table{border-collapse:collapse;width:100%;font-size:.95rem}
+  th{font-variant:small-caps;letter-spacing:.09em;font-weight:400;text-align:left;
+     border-bottom:1px solid var(--rule);padding:.3rem .5rem;color:var(--muted)}
+  td{padding:.3rem .5rem;border-bottom:1px dotted #d9bfce;vertical-align:top}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .tag{font-size:.78rem;font-variant:small-caps;letter-spacing:.08em;color:var(--muted)}
+  .tag.prov{color:#8a6d1f}
+  .tag.await{color:#9a8390;font-style:italic}
+  .strip-scroll{overflow-x:auto}
+  .movecat{border:1px solid var(--rule);background:#fffdfe;margin:.8rem 0;padding:.7rem .9rem}
+  .movecat legend, .movecat .leg{font-variant:small-caps;letter-spacing:.1em;color:var(--muted);
+        font-size:.92rem;padding:0 .3rem;margin-bottom:.3rem;display:block}
+  .opt{display:block;border:1px solid transparent;border-left:4px double transparent;
+       padding:.4rem .6rem;margin:.25rem 0;cursor:pointer}
+  .opt:hover{background:var(--alt)}
+  .opt input{position:absolute;opacity:0;pointer-events:none}
+  .opt.sel{background:var(--alt);border-color:var(--rule)}
+  .opt .ol{font-weight:700}
+  .opt .ob{color:var(--muted);font-size:.92rem}
+  .cost{float:right;letter-spacing:.15em;color:var(--rule);font-size:.9rem}
+  .btn{font-family:inherit;font-size:1rem;font-variant:small-caps;letter-spacing:.14em;
+       background:var(--page);color:var(--ink);border:1px solid var(--ink);
+       padding:.5rem 1.3rem;cursor:pointer;border-radius:0}
+  .btn:hover{background:var(--ink);color:var(--page)}
+  .btn.primary{border-width:2px}
+  .btn:focus-visible, .opt:focus-within, input:focus-visible, select:focus-visible{
+       outline:2px solid var(--red);outline-offset:2px}
+  .btnrow{margin:1.2rem 0;display:flex;gap:.8rem;flex-wrap:wrap;align-items:center}
+  input[type=text],input[type=number],select{
+       font-family:inherit;font-size:1rem;background:#fffdfe;color:var(--ink);
+       border:1px solid var(--rule);padding:.3rem .5rem;border-radius:0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+  .circular{border:1px solid var(--ink);background:#fffdfe;padding:.8rem 1rem;margin:.9rem 0}
+  .circular .chead{display:flex;justify-content:space-between;border-bottom:1px solid var(--ink);
+       padding-bottom:.3rem;margin-bottom:.5rem;font-variant:small-caps;letter-spacing:.12em}
+  .quiet{color:var(--muted);font-size:.92rem}
+  .interstitial{position:fixed;inset:0;background:var(--page);display:none;z-index:50;
+       align-items:center;justify-content:center;text-align:center;padding:2rem}
+  .interstitial.active{display:flex}
+  .interstitial .inner{max-width:34rem}
+  .seal{font-variant:small-caps;letter-spacing:.35em;font-size:1.4rem;border-top:4px double var(--rule);
+       border-bottom:4px double var(--rule);padding:.6rem 0;margin:1rem 0}
+  .score-ok{color:#2c5e3a}.score-miss{color:#8a3b3b}
+  .chart{width:100%;min-height:330px}
+  .chart.small{min-height:260px}
+  details{margin:.8rem 0}
+  summary{cursor:pointer;font-variant:small-caps;letter-spacing:.1em;color:var(--muted)}
+  footer{margin-top:2.5rem;color:var(--muted);font-size:.92rem}
+  a{color:var(--red)}
+  .fanctl{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.4rem 0}
+  ul.plain{list-style:none;padding-left:0}
+  ul.plain li{margin:.3rem 0}
+  .mono{font-variant-numeric:tabular-nums}
+
+  /* ---------- period rail ---------- */
+  #rail{margin:0 0 1.3rem}
+  .rail-track{display:flex;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+  .rail-seg{flex:1;text-align:center;padding:.35rem .2rem;position:relative;color:var(--muted)}
+  .rail-seg+.rail-seg{border-left:1px dotted #d9bfce}
+  .rail-roman{font-variant:small-caps;letter-spacing:.16em;display:block;font-size:1.02rem}
+  .rail-years{font-size:.72rem;letter-spacing:.04em;display:block}
+  .rail-seg .rail-fill{position:absolute;left:0;right:0;bottom:-1px;height:0;
+      border-bottom:4px double var(--rule);transform:scaleX(0);transform-origin:left;
+      transition:transform .6s cubic-bezier(.2,.7,.2,1)}
+  .rail-seg.done{color:var(--ink)}
+  .rail-seg.done .rail-fill{transform:scaleX(1)}
+  .rail-seg.now{color:var(--ink)}
+  .rail-seg.now .rail-roman{border-bottom:4px double var(--ink);padding-bottom:.05rem}
+  .rail-pip{display:inline-block;width:.5rem;height:.5rem;border-radius:50%;
+      background:var(--red);margin-left:.3rem;vertical-align:middle;
+      opacity:0;transform:scale(.2);transition:opacity .4s,transform .4s}
+  .rail-seg.episode .rail-pip{opacity:1;transform:scale(1)}
+
+  /* ---------- motion ---------- */
+  .draw{transform:scaleX(0);transform-origin:center;animation:ruleDraw .8s .1s cubic-bezier(.2,.7,.2,1) forwards}
+  @keyframes ruleDraw{to{transform:scaleX(1)}}
+  .stamp{animation:stampIn .55s cubic-bezier(.2,1.4,.4,1) both}
+  @keyframes stampIn{0%{opacity:0;transform:scale(1.18) rotate(-2.5deg)}
+      65%{opacity:1;transform:scale(.985) rotate(.4deg)}100%{opacity:1;transform:none}}
+  .reveal{opacity:0;transform:translateY(7px)}
+  .reveal.show{opacity:1;transform:none;transition:opacity .45s,transform .45s}
+  .tickcell{transition:color .3s}
+  .tickcell.live{color:var(--red)}
+  .leader-note{font-style:italic;color:var(--red);margin:.4rem 0 0;opacity:0;transition:opacity .6s}
+  .leader-note.show{opacity:1}
+  .seal-stamp{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+      z-index:60;pointer-events:none}
+  .seal-stamp.active{display:flex}
+  .seal-stamp .ring{border:4px double var(--red);color:var(--red);border-radius:50%;
+      width:11rem;height:11rem;display:flex;align-items:center;justify-content:center;
+      font-variant:small-caps;letter-spacing:.3em;font-size:1.3rem;background:rgba(255,248,253,.88);
+      animation:sealPop .55s cubic-bezier(.2,1.5,.4,1) both}
+  @keyframes sealPop{0%{opacity:0;transform:scale(1.7) rotate(-8deg)}
+      70%{opacity:1;transform:scale(.95) rotate(1deg)}100%{opacity:1;transform:none}}
+  .convene-line{font-variant:small-caps;letter-spacing:.18em;color:var(--muted);
+      margin:.4rem 0;opacity:0;animation:fadeIn .4s forwards}
+  @keyframes fadeIn{to{opacity:1}}
+  .skipnote{font-size:.8rem;color:var(--muted);font-style:italic;text-align:right;margin:.2rem 0}
+  td.unpub{background:repeating-linear-gradient(45deg,#f6f0f4 0 6px,#fce8f4 6px 12px);
+      color:transparent;user-select:none}
+  .tag.prov{animation:provPulse 2.4s ease-in-out infinite}
+  @keyframes provPulse{0%,100%{opacity:1}50%{opacity:.45}}
+  .playorder li{margin:.45rem 0}
+  .opt{transition:background .16s,border-color .16s}
+  .btn{transition:background .14s,color .14s,transform .06s}
+  .btn:active{transform:translateY(1px)}
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none!important;transition:none!important}
+    .draw{transform:none}.reveal{opacity:1;transform:none}
+    .rail-seg .rail-fill{transition:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="front">
+  <div class="eyebrow">The Primacy Premium</div>
+  <h1>Committee Exercise</h1>
+  <p class="subtitle">Two sided conditional play on the pathways question, 2026 to 2035</p>
+  <div class="byline">Alyssa Agard</div>
+  <hr class="rule2 draw">
+</header>
+
+<nav id="rail" aria-label="periods" hidden>
+  <div class="rail-track"></div>
+</nav>
+
+<!-- ============================ SETUP ============================ -->
+<section id="scr-setup" class="screen active">
+  <p>This exercise puts two committees on opposite sides of the pathways question. Each period, both
+  committees commit a stance sealed and simultaneously; the stances condition the forecast, they do not
+  script the outcome. Indicators publish on their real schedules, so each committee reads the world late
+  and partial, which is the condition the underlying research project is about. Play is not zero sum:
+  each committee is scored against its own objectives, its commitment expenditure, and the calibration
+  of the interval forecasts it states before each resolution.</p>
+
+  <div class="panel alt">
+    <h3 class="sc" style="margin-top:0">Order of play</h3>
+    <ol class="playorder">
+      <li>Read the indicator board. Series publish on their real schedules, so parts of the record are provisional or not yet public.</li>
+      <li>Set a stance in each of five categories. The committee estimate redraws live as stances change: that morphing fan is the conditioning, made visible.</li>
+      <li>State an eighty percent interval for the war risk premium fixing. It is scored when the fixing publishes.</li>
+      <li>Commit sealed. The counterpart commits without seeing your sheet; in two committee play the device is passed under seal.</li>
+      <li>Resolution. Circulars issue, indicators tick to their new fixings, intervals score, and the pathway posterior updates. Five periods to 2035, then the debrief opens the sealed record.</li>
+    </ol>
+  </div>
+
+  <h2>Convene the exercise</h2>
+  <div class="panel">
+    <div class="grid2">
+      <div>
+        <h3>Mode</h3>
+        <label class="opt sel" data-grp="mode"><input type="radio" name="mode" value="hotseat" checked>
+          <span class="ol">Two committees, one device</span><br><span class="ob">Sealed handoffs between commitments.</span></label>
+        <label class="opt" data-grp="mode"><input type="radio" name="mode" value="solo_blue">
+          <span class="ol">Solo as the Blue committee</span><br><span class="ob">The Red committee plays to an archetype prior.</span></label>
+        <label class="opt" data-grp="mode"><input type="radio" name="mode" value="solo_red">
+          <span class="ol">Solo as the Red committee</span><br><span class="ob">The Blue committee plays a balanced program.</span></label>
+        <div id="arch-block">
+          <h3>Red archetype</h3>
+          <select id="archetype">
+            <option value="patient">Patient accretionist</option>
+            <option value="demonstrator">Opportunistic demonstrator</option>
+            <option value="constrained">Resource constrained consolidator</option>
+          </select>
+          <p class="quiet">A prior over Red stances, not a script. Applies to solo Blue play.</p>
+        </div>
+      </div>
+      <div>
+        <h3>World assumptions</h3>
+        <div id="world-menus"></div>
+        <p class="quiet">Two further world parameters, shock propensity and the Red macroeconomic
+        tailwind, are drawn sealed at the start and revealed only at the debrief.</p>
+        <h3>Exercise seed</h3>
+        <input type="text" id="seed" value="20260724" size="12" aria-label="exercise seed">
+        <p class="quiet">The same seed reproduces the same sealed draws, episode history, and
+        resolution path.</p>
+      </div>
+    </div>
+    <div class="btnrow"><button class="btn primary" id="btn-start">Convene</button></div>
+  </div>
+
+  <details><summary>Method in brief</summary><div id="methods-setup"></div></details>
+</section>
+
+<!-- ============================ COMMIT ============================ -->
+<section id="scr-commit" class="screen">
+  <div class="side-banner" id="commit-banner">
+    <span class="who" id="commit-who">Blue committee</span>
+    <span class="period-tag" id="commit-period">Move sheet, Period I</span>
+  </div>
+
+  <h2>Indicator board</h2>
+  <p class="quiet">Series publish on schedule. Provisional figures may be superseded; unpublished
+  periods are marked. The counterpart committee's stance is never shown.</p>
+  <div class="strip-scroll"><table id="indicator-table"></table></div>
+  <details><summary>Series notes</summary>
+    <table>
+      <tbody>
+      <tr><td class="sc">Blue military expenditure</td><td class="quiet">Real outlays, indexed to 2025. Appears provisional in period from budget announcements; finalized next period.</td></tr>
+      <tr><td class="sc">Red military expenditure</td><td class="quiet">Real outlays, indexed to 2025. Same provisional then final schedule.</td></tr>
+      <tr><td class="sc">European expenditure</td><td class="quiet">Central and Western European real outlays, indexed to 2025. Tracks follow through on the five percent commitment.</td></tr>
+      <tr><td class="sc">USD reserve share</td><td class="quiet">Percent of allocated foreign exchange reserves held in dollars. Publishes one period behind.</td></tr>
+      <tr><td class="sc">RMB reserve share</td><td class="quiet">Percent of allocated reserves held in renminbi. Publishes one period behind.</td></tr>
+      <tr><td class="sc">Additional war risk premium</td><td class="quiet">Percent of hull and machinery value for listed area transits. Fixes within the period; the scored series.</td></tr>
+      <tr><td class="sc">Red arms export share</td><td class="quiet">Percent of world major arms exports. Publishes one period behind.</td></tr>
+      <tr><td class="sc">Warhead ratio</td><td class="quiet">Red stockpile against Blue deployed strategic forces. The denominator is stochastic after treaty lapse. Publishes one period behind.</td></tr>
+      </tbody>
+    </table>
+  </details>
+
+  <h2>Committee estimate</h2>
+  <p class="quiet">Conditional fan under this committee's stance held forward, with the counterpart
+  and sealed world parameters at reference values. The fan is produced by the fitted emulator;
+  held out error is reported in the appendix.</p>
+  <div class="fanctl">
+    <label class="sc" for="commit-chan">series</label>
+    <select id="commit-chan"></select>
+  </div>
+  <div id="commit-fan" class="chart"></div>
+
+  <h2>Move sheet</h2>
+  <div id="move-menus"></div>
+
+  <h2>Stated interval</h2>
+  <div class="panel alt">
+    <p>State an eighty percent interval for the additional war risk premium at this period's
+    resolution, in percent of hull and machinery value. The interval is scored when the fixing
+    publishes.</p>
+    <label>lower <input type="number" id="int-lo" step="0.01" min="0" style="width:6.5rem"></label>
+    &nbsp;&nbsp;
+    <label>upper <input type="number" id="int-hi" step="0.01" min="0" style="width:6.5rem"></label>
+    <span class="quiet" id="int-hint"></span>
+  </div>
+
+  <div class="btnrow">
+    <button class="btn primary" id="btn-commit">Commit sealed</button>
+    <span class="quiet" id="commit-cost"></span>
+  </div>
+</section>
+
+<!-- ============================ RESOLVE ============================ -->
+<section id="scr-resolve" class="screen">
+  <div class="side-banner">
+    <span class="who">Resolution</span>
+    <span class="period-tag" id="resolve-period">Period I</span>
+  </div>
+  <p class="skipnote">proceed at any time; the sequence completes instantly</p>
+
+  <div id="circulars"></div>
+
+  <h2>Published this period</h2>
+  <div class="strip-scroll"><table id="resolve-table"></table></div>
+
+  <h2>Reference estimate and published path</h2>
+  <p class="quiet">The reference fan conditions all stances at reference values; it is the shared
+  staff estimate, deliberately uninformed by either committee's sealed stance. Published values
+  overlay in ink.</p>
+  <div class="fanctl">
+    <label class="sc" for="resolve-chan">series</label>
+    <select id="resolve-chan"></select>
+  </div>
+  <div id="resolve-fan" class="chart"></div>
+
+  <div class="grid2">
+    <div>
+      <h2>Interval scoring</h2>
+      <table id="interval-table"></table>
+      <p class="quiet">Winkler interval score at eighty percent nominal coverage; lower is better.
+      Width is paid always; misses are penalized at ten times the exceedance.</p>
+    </div>
+    <div>
+      <h2>Pathway posterior</h2>
+      <div id="posterior-chart" class="chart small"></div>
+      <p id="leader-note" class="leader-note" aria-live="polite"></p>
+      <p class="quiet">Classifier over conditioning trajectories, evaluated on committed stances and
+      the episode record, sealed parameters at reference until the debrief.</p>
+    </div>
+  </div>
+
+  <div class="btnrow">
+    <button class="btn primary" id="btn-next">Proceed</button>
+  </div>
+</section>
+
+<!-- ============================ DEBRIEF ============================ -->
+<section id="scr-debrief" class="screen">
+  <div class="side-banner">
+    <span class="who">Debrief</span>
+    <span class="period-tag">Horizon closed, 2035</span>
+  </div>
+
+  <div class="grid2">
+    <div class="panel"><h3 class="sc" style="color:var(--blue)">Blue committee</h3><div id="score-blue"></div></div>
+    <div class="panel"><h3 class="sc" style="color:var(--red)">Red committee</h3><div id="score-red"></div></div>
+  </div>
+  <p class="quiet">Scoring is not zero sum by design. The project's central claim is that the pathway,
+  not the endpoint, carries the variance; two committees can both attain their conditions along one
+  pathway and both fail along another.</p>
+
+  <h2>Realized path against the joint conditional fan</h2>
+  <p class="quiet">The debrief fan conditions on the true joint stance record and the revealed sealed
+  parameters. Divergence between this fan and the in period committee estimates is the measured cost
+  of the fog.</p>
+  <div class="fanctl">
+    <label class="sc" for="debrief-chan">series</label>
+    <select id="debrief-chan"></select>
+  </div>
+  <div id="debrief-fan" class="chart"></div>
+
+  <div class="grid2">
+    <div>
+      <h2>Pathway posterior, full record</h2>
+      <div id="debrief-posterior" class="chart small"></div>
+      <div id="pathway-verdict"></div>
+    </div>
+    <div>
+      <h2>Sealed world parameters</h2>
+      <div id="sealed-reveal"></div>
+      <h2>Move record</h2>
+      <div class="strip-scroll"><table id="move-record"></table></div>
+    </div>
+  </div>
+
+  <details open><summary>Method and emulator error</summary><div id="methods-debrief"></div></details>
+
+  <div class="btnrow"><button class="btn" id="btn-restart">Convene again</button></div>
+</section>
+
+<!-- ============================ INTERSTITIAL ============================ -->
+<div class="interstitial" id="handoff" role="dialog" aria-modal="true">
+  <div class="inner">
+    <div class="seal">Sealed</div>
+    <p id="handoff-text">Pass the device to the Red committee.</p>
+    <button class="btn primary" id="btn-handoff">Continue</button>
+  </div>
+</div>
+
+<div class="seal-stamp" id="seal"><div class="ring">sealed</div></div>
+
+<footer>
+  <hr class="rule2">
+  <p>The Primacy Premium: Committee Exercise. A conditional forecasting exercise; stances condition
+  the forecast and do not script the outcome. Build seed 20260724. Emulator and generative constants
+  are documented in the payload and regenerated by <span class="mono">build_data.py</span>.
+  Raw SIPRI and IMF files are excluded from the repository under publisher terms; calibration anchors
+  are documented in the build script.</p>
+  <p>License <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>.
+  <span class="sc">Alyssa Agard</span>.</p>
+</footer>
+
+</div>
+
+<script id="engine">
+"use strict";
+const P = /*__PAYLOAD__*/null;
+
+/* ---------- rng ---------- */
+function xmur3(str){let h=1779033703^str.length;for(let i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19;}return function(){h=Math.imul(h^(h>>>16),2246822507);h=Math.imul(h^(h>>>13),3266489909);return (h^=h>>>16)>>>0;};}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};}
+function rngFor(tag){return mulberry32(xmur3(GAME.seed+"|"+tag)());}
+function gauss(r){let u=0;while(u===0)u=r();const v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+/* ---------- motion utilities ---------- */
+const REDUCED=(typeof window!=="undefined"&&window.matchMedia
+  &&window.matchMedia("(prefers-reduced-motion: reduce)").matches)||false;
+let SKIP=false;const PENDING=new Set();
+function pause(ms){return new Promise(res=>{
+  if(REDUCED||SKIP){res();return;}
+  const id=setTimeout(()=>{PENDING.delete(fin);res();},ms);
+  const fin=()=>{clearTimeout(id);res();};PENDING.add(fin);});}
+function skipAll(){SKIP=true;PENDING.forEach(f=>f());PENDING.clear();}
+function tick(el,from,to,dp,dur){
+  if(REDUCED||SKIP||!window.requestAnimationFrame){el.textContent=Number(to).toFixed(dp);return;}
+  const t0=performance.now();el.classList.add("live");
+  function step(t){
+    if(SKIP){el.textContent=Number(to).toFixed(dp);el.classList.remove("live");return;}
+    const p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,3);
+    el.textContent=(from+(to-from)*e).toFixed(dp);
+    if(p<1)requestAnimationFrame(step);else el.classList.remove("live");}
+  requestAnimationFrame(step);}
+function stagger(nodes,step){nodes.forEach((n,i)=>{n.classList.add("reveal");
+  if(REDUCED||SKIP){n.classList.add("show");return;}
+  setTimeout(()=>n.classList.add("show"),60+i*step);});}
+
+/* ---------- payload handles ---------- */
+const CN=P.consts, KEYS=P.emulator.param_order, NP=KEYS.length;
+const PARAM={}; P.params.forEach(p=>PARAM[p.key]=p);
+const CH=P.channels, CHKEY=CH.map(c=>c.key), NCH=CH.length, T=P.epochs.length;
+const ROMAN=["I","II","III","IV","V"];
+const EPOCH_END=[2027,2029,2031,2033,2035];
+const IX={}; KEYS.forEach((k,i)=>IX[k]=i);
+const CHIX={}; CHKEY.forEach((k,i)=>CHIX[k]=i);
+
+/* ---------- emulator ---------- */
+function feat(x){ // x: raw values in param order
+  const z=KEYS.map((k,i)=>(x[i]-PARAM[k].lo)/(PARAM[k].hi-PARAM[k].lo));
+  const f=[1].concat(z, z.map(v=>v*v));
+  for(let i=0;i<NP;i++)for(let j=i+1;j<NP;j++)f.push(z[i]*z[j]);
+  return f;
+}
+const CLAMP={blue_milex:[5,1e9],red_milex:[5,1e9],euro_milex:[5,1e9],
+  usd_share:[CN.us_lo,CN.us_hi],rmb_share:[CN.rm_lo,CN.rm_hi],
+  awrp:[CN.aw_lo,CN.aw_hi],red_export:[CN.re_lo,CN.re_hi],nuc_ratio:[0.1,2.5]};
+function emuAll(x){
+  const f=feat(x), out={}; CHKEY.forEach(k=>out[k]=Array.from({length:T},()=>[0,0,0]));
+  P.emulator.target_index.forEach((ti,j)=>{
+    const co=P.emulator.coef[j]; let s=0;
+    for(let i=0;i<co.length;i++)s+=co[i]*f[i];
+    out[ti.c][ti.e][ti.q===0.1?0:ti.q===0.5?1:2]=s;
+  });
+  CHKEY.forEach(k=>{const cl=CLAMP[k];out[k]=out[k].map(tr=>{
+    const s=tr.slice().sort((a,b)=>a-b);
+    return s.map(v=>Math.min(cl[1],Math.max(cl[0],v)));});});
+  return out;
+}
+
+/* ---------- generative recursion (mirrors build_data.py) ---------- */
+function initState(){const y=CN.y0;return {blue:y.blue_milex,red:y.red_milex,euro:y.euro_milex,
+  usd:y.usd_share,rmb:y.rmb_share,law:Math.log(y.awrp),rex:y.red_export,wh:y.red_wh,dep:y.blue_dep};}
+function drawEpoch(r){return {u:r(),n:Array.from({length:10},()=>gauss(r))};}
+function stepEpoch(st,x,d){
+  const g=k=>x[IX[k]], clip=(v,a,b)=>Math.min(b,Math.max(a,v));
+  const [n_bx,n_rx,n_ex,n_us,n_rm,n_aw,n_awj,n_re,n_nw,n_nd]=d.n;
+  const hz=clip(CN.hz_a+CN.hz_gray*g("r_gray")+CN.hz_shock*g("g_shock")
+    +CN.hz_post*g("b_posture")+CN.hz_int*g("r_gray")*(1-g("b_posture")),CN.hz_lo,CN.hz_hi);
+  const ep=d.u<hz?1:0;
+  const gb=CN.bx_a+CN.bx_fiscal*g("g_fiscal")+CN.bx_ind*g("b_industrial")+CN.bx_post*g("b_posture");
+  st.blue*=Math.pow(1+gb,2)*Math.exp(n_bx*CN.bx_sd);
+  const gr=CN.rx_a+CN.rx_naval*g("r_naval")+CN.rx_nuc*g("r_nuclear")+CN.rx_growth*g("g_growth");
+  st.red*=Math.pow(1+gr,2)*Math.exp(n_rx*CN.rx_sd);
+  const ge=CN.ex_a+CN.ex_euro*g("g_euro")+CN.ex_all*g("b_alliance");
+  st.euro*=Math.pow(1+ge,2)*Math.exp(n_ex*CN.ex_sd);
+  st.usd=clip(st.usd+CN.us_a+CN.us_findiv*g("r_findiv")+CN.us_ep*ep+n_us*CN.us_sd,CN.us_lo,CN.us_hi);
+  st.rmb=clip(st.rmb+CN.rm_a+CN.rm_findiv*g("r_findiv")+CN.rm_ep*ep+n_rm*CN.rm_sd,CN.rm_lo,CN.rm_hi);
+  const base=Math.log(CN.y0.awrp);
+  let law=base+CN.aw_phi*(st.law-base)+n_aw*CN.aw_sd;
+  if(ep){const jump=Math.log(CN.aw_jump_a+CN.aw_jump_gray*g("r_gray"))+n_awj*CN.aw_jump_sd;
+    law=Math.max(law,jump);}
+  const awrp=clip(Math.exp(law),CN.aw_lo,CN.aw_hi); st.law=Math.log(awrp);
+  st.rex=clip(st.rex+CN.re_a+CN.re_drive*g("r_export")+CN.re_bexp*Math.max(g("b_export"),0)
+    +CN.re_btight*Math.max(-g("b_export"),0)+CN.re_ep*ep+n_re*CN.re_sd,CN.re_lo,CN.re_hi);
+  const gn=CN.nw_a+CN.nw_tempo*g("r_nuclear")+n_nw*CN.nw_sd;
+  st.wh*=Math.pow(1+gn,2);
+  st.dep=clip(st.dep+CN.nd_upload*Math.max(-g("b_force"),0)+n_nd*CN.nd_sd,CN.nd_lo,CN.nd_hi);
+  return {ep,vals:{blue_milex:st.blue,red_milex:st.red,euro_milex:st.euro,usd_share:st.usd,
+    rmb_share:st.rmb,awrp,red_export:st.rex,nuc_ratio:st.wh/st.dep}};
+}
+
+/* ---------- game state ---------- */
+const GAME={seed:"20260724",mode:"hotseat",archetype:"patient",turn:0,
+  world:{g_fiscal:0,g_euro:0.5},sealed:{g_shock:0.5,g_growth:0},
+  commits:{blue:[],red:[]},intervals:{blue:[],red:[]},cost:{blue:0,red:0},
+  state:null,history:[],episodes:[],posterior:[],pendingSide:null};
+
+function sideParams(side){return P.moves[side];}
+function baseStance(side){const o={};sideParams(side).forEach(m=>o[m.key]=PARAM[m.key].base);return o;}
+function stanceFromLevels(side,levels){const o={};sideParams(side).forEach((m,i)=>o[m.key]=m.levels[levels[i]].value);return o;}
+function levelsCost(side,levels){let c=0;sideParams(side).forEach((m,i)=>c+=m.levels[levels[i]].cost);return c;}
+
+function buildX(blueStance,redStance,world,sealed){
+  const x=new Array(NP);
+  KEYS.forEach((k,i)=>{
+    if(k in blueStance)x[i]=blueStance[k];
+    else if(k in redStance)x[i]=redStance[k];
+    else if(k in world)x[i]=world[k];
+    else if(k in sealed)x[i]=sealed[k];
+    else x[i]=PARAM[k].base;
+  });
+  return x;
+}
+/* effective horizon constant vector: stances to date plus current held forward */
+function effVector(side,uptoTurn,currentLevels){
+  const own=[]; for(let s=0;s<uptoTurn;s++)own.push(stanceFromLevels(side,GAME.commits[side][s].levels));
+  if(currentLevels)own.push(stanceFromLevels(side,currentLevels));
+  const held=own.length?own[own.length-1]:baseStance(side);
+  while(own.length<T)own.push(held);
+  const avg={}; sideParams(side).forEach(m=>{avg[m.key]=own.reduce((a,o)=>a+o[m.key],0)/T;});
+  const other=side==="blue"?"red":"blue";
+  const sealedRef={g_shock:PARAM.g_shock.base,g_growth:PARAM.g_growth.base};
+  return side==="blue"
+    ? buildX(avg,baseStance(other),GAME.world,sealedRef)
+    : buildX(baseStance(other),avg,GAME.world,sealedRef);
+}
+function refVector(){return buildX(baseStance("blue"),baseStance("red"),GAME.world,
+  {g_shock:PARAM.g_shock.base,g_growth:PARAM.g_growth.base});}
+function jointVector(){ // debrief: true averages, true sealed
+  const avg=side=>{const a={};sideParams(side).forEach(m=>{a[m.key]=GAME.commits[side]
+    .reduce((s,c)=>s+stanceFromLevels(side,c.levels)[m.key],0)/GAME.commits[side].length;});return a;};
+  return buildX(avg("blue"),avg("red"),GAME.world,GAME.sealed);
+}
+
+/* ---------- pathway posterior ---------- */
+function pathwayScores(uptoTurn,trueSealed){
+  const avgOf=(side,key)=>{const cs=GAME.commits[side].slice(0,uptoTurn);
+    if(!cs.length)return PARAM[key].base;
+    return cs.reduce((s,c)=>s+stanceFromLevels(side,c.levels)[key],0)/cs.length;};
+  /* episode rate, not raw count, so the posterior does not saturate mid-game */
+  const eps=GAME.episodes.slice(0,uptoTurn).reduce((a,b)=>a+(b?1:0),0)/Math.max(1,uptoTurn);
+  const shock=trueSealed?GAME.sealed.g_shock:PARAM.g_shock.base;
+  const W=P.pathways;
+  const sA=W.accretion.r_naval*avgOf("red","r_naval")+W.accretion.r_export*avgOf("red","r_export")
+    +W.accretion.r_findiv*avgOf("red","r_findiv")+W.accretion.r_gray*avgOf("red","r_gray")
+    +W.accretion.episodes*eps;
+  const sB=W.retrenchment.g_fiscal*GAME.world.g_fiscal
+    +W.retrenchment.b_industrial_inv*(1-avgOf("blue","b_industrial"))
+    +W.retrenchment.b_posture_inv*(1-avgOf("blue","b_posture"))
+    +W.retrenchment.r_naval*avgOf("red","r_naval")+W.retrenchment.episodes*eps;
+  const sC=W.demonstration.r_gray*avgOf("red","r_gray")+W.demonstration.episodes*eps
+    +W.demonstration.r_nuclear*avgOf("red","r_nuclear")+W.demonstration.g_shock*shock;
+  const t=W.tau,m=Math.max(sA/t,sB/t,sC/t);
+  const eA=Math.exp(sA/t-m),eB=Math.exp(sB/t-m),eC=Math.exp(sC/t-m),Z=eA+eB+eC;
+  return {accretion:eA/Z,retrenchment:eB/Z,demonstration:eC/Z};
+}
+
+/* ---------- archetype priors ---------- */
+const ARCH={
+  patient:     {r_naval:[.05,.30,.65],r_nuclear:[.25,.55,.20],r_gray:[.70,.25,.05],
+                r_findiv:[.15,.50,.35],r_export:[.10,.40,.50]},
+  demonstrator:{r_naval:[.20,.50,.30],r_nuclear:[.15,.45,.40],r_gray:[.10,.35,.55],
+                r_findiv:[.30,.50,.20],r_export:[.30,.45,.25]},
+  constrained: {r_naval:[.35,.50,.15],r_nuclear:[.55,.35,.10],r_gray:[.55,.35,.10],
+                r_findiv:[.25,.50,.25],r_export:[.35,.45,.20]},
+  balancedBlue:{b_force:[.25,.50,.25],b_alliance:[.20,.50,.30],b_export:[.30,.40,.30],
+                b_posture:[.20,.50,.30],b_industrial:[.25,.50,.25]}
+};
+function aiLevels(side,turn){
+  const prior=side==="red"?ARCH[GAME.archetype]:ARCH.balancedBlue;
+  const r=rngFor("ai|"+side+"|"+turn);
+  return sideParams(side).map(m=>{
+    let w=prior[m.key].slice();
+    if(side==="red"&&GAME.archetype==="demonstrator"&&m.key==="r_gray"){
+      const shift=Math.min(0.06*turn,0.20);w=[Math.max(0,w[0]-shift),w[1],w[2]+shift];}
+    const u=r()*(w[0]+w[1]+w[2]);
+    return u<w[0]?0:(u<w[0]+w[1]?1:2);
+  });
+}
+
+/* ---------- scoring ---------- */
+function winkler(L,U,x,a){let s=U-L;if(x<L)s+=(2/a)*(L-x);if(x>U)s+=(2/a)*(x-U);return s;}
+function fmt(k,v){const dp=CH[CHIX[k]].dp;return v==null?"":Number(v).toFixed(dp);}
+
+/* ---------- fog / publication ---------- */
+function visibleVals(chanKey,tRes){ // array length T, null where unpublished after tRes resolved epochs
+  const lag=CH[CHIX[chanKey]].lag,out=[];
+  for(let e=0;e<T;e++){
+    const have=e<GAME.history.length;
+    let vis=false;
+    if(lag==="fast")vis=have&&e<tRes;
+    else if(lag==="flash")vis=have&&e<tRes;
+    else vis=have&&e<tRes-1;
+    out.push(vis?GAME.history[e][chanKey]:null);
+  }
+  return out;
+}
+function pubTag(chanKey,tRes){
+  const lag=CH[CHIX[chanKey]].lag;
+  if(lag==="fast")return {latest:tRes-1,tag:""};
+  if(lag==="flash")return {latest:tRes-1,tag:tRes>0?"provisional":""};
+  return {latest:tRes-2,tag:tRes>=1?"publishes next period":""};
+}
+
+/* ---------- UI helpers ---------- */
+const $=id=>document.getElementById(id);
+function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  $(id).classList.add("active");window.scrollTo(0,0);}
+function optionWire(container){container.querySelectorAll(".opt").forEach(o=>{
+  const sync=()=>{const inp=o.querySelector("input");inp.checked=true;
+    container.querySelectorAll('.opt[data-grp="'+o.dataset.grp+'"]').forEach(x=>x.classList.remove("sel"));
+    o.classList.add("sel");o.dispatchEvent(new Event("optsel",{bubbles:true}));};
+  o.addEventListener("click",sync);
+  o.querySelector("input").addEventListener("change",sync);});}
+
+function moveMenuHTML(side,who){
+  return sideParams(side).map((m,mi)=>{
+    const opts=m.levels.map((lv,li)=>
+      '<label class="opt'+(li===1?" sel":"")+'" data-grp="'+who+"-"+m.key+'">'
+      +'<input type="radio" name="'+who+"-"+m.key+'" value="'+li+'"'+(li===1?" checked":"")+'>'
+      +'<span class="cost">'+("\u25CF".repeat(lv.cost)||"\u25CB")+'</span>'
+      +'<span class="ol">'+lv.label+'</span><br><span class="ob">'+lv.brief+'</span></label>').join("");
+    return '<div class="movecat"><span class="leg">'+m.label+'</span>'+opts+'</div>';
+  }).join("");
+}
+function readLevels(side,who){
+  return sideParams(side).map(m=>{
+    const el=document.querySelector('input[name="'+who+"-"+m.key+'"]:checked');
+    return el?parseInt(el.value,10):1;});
+}
+
+/* ---------- charts ---------- */
+const FONT={family:"Times New Roman, Times, serif",size:13,color:"#241d26"};
+const LAYOUT={paper_bgcolor:"rgba(0,0,0,0)",plot_bgcolor:"rgba(0,0,0,0)",font:FONT,
+  margin:{l:52,r:16,t:28,b:38},showlegend:false,
+  xaxis:{gridcolor:"#eddce6",zeroline:false},yaxis:{gridcolor:"#eddce6",zeroline:false}};
+const CFG={displayModeBar:false,responsive:true};
+function xCats(){return ["2025"].concat(P.epochs);}
+const FANSTATE={};
+function drawFan(div,res,chan,realized,title){
+  const y0=CH[CHIX[chan]].y0;
+  const lo=[y0].concat(res[chan].map(t=>t[0]));
+  const md=[y0].concat(res[chan].map(t=>t[1]));
+  const hi=[y0].concat(res[chan].map(t=>t[2]));
+  const rl=[y0].concat(realized);
+  const traces=[
+    {x:xCats(),y:lo,mode:"lines",line:{width:0},hoverinfo:"skip"},
+    {x:xCats(),y:hi,mode:"lines",line:{width:0},fill:"tonexty",
+     fillcolor:"rgba(156,111,134,.16)",hoverinfo:"skip"},
+    {x:xCats(),y:md,mode:"lines",line:{color:"#8a5a72",width:1.6,dash:"dot"},
+     name:"conditional median"},
+    {x:xCats(),y:rl,mode:"lines+markers",connectgaps:false,
+     line:{color:"#241d26",width:2},marker:{size:6,color:"#241d26"},name:"published"}];
+  const lay=JSON.parse(JSON.stringify(LAYOUT));
+  lay.title={text:title,font:{family:FONT.family,size:14}};
+  lay.yaxis.title={text:CH[CHIX[chan]].unit,font:{size:12}};
+  const same=FANSTATE[div]===chan;
+  FANSTATE[div]=chan;
+  if(same&&!REDUCED&&!SKIP){
+    try{
+      Plotly.animate(div,{data:traces.map(t=>({y:t.y})),traces:[0,1,2,3],layout:lay},
+        {transition:{duration:480,easing:"cubic-in-out"},frame:{duration:480,redraw:false}});
+      return;
+    }catch(e){/* fall through to a hard redraw */}
+  }
+  Plotly.react(div,traces,lay,CFG);
+}
+function drawPosterior(div,traj){
+  const x=traj.map((_,i)=>i===0?"setup":(i-1<ROMAN.length?ROMAN[i-1]:"close"));
+  const mk=(key,color)=>({x,y:traj.map(p=>p[key]),mode:"lines+markers",
+    line:{color,width:1.8},marker:{size:5},name:key});
+  const lay=JSON.parse(JSON.stringify(LAYOUT));
+  lay.showlegend=true;lay.legend={orientation:"h",font:{size:12}};
+  lay.yaxis.range=[0,1];lay.yaxis.title={text:"posterior probability",font:{size:12}};
+  Plotly.react(div,[mk("accretion","#31456e"),mk("retrenchment","#8a5a72"),
+    mk("demonstration","#7d3644")],lay,CFG);
+}
+
+/* ---------- period rail ---------- */
+function renderRail(tRes,current){
+  const rail=document.getElementById("rail");
+  rail.hidden=false;
+  const trk=rail.querySelector(".rail-track");
+  if(!trk.children.length){
+    trk.innerHTML=P.epochs.map((e,i)=>'<div class="rail-seg" data-t="'+i+'">'
+      +'<span class="rail-roman">'+ROMAN[i]+'<span class="rail-pip"></span></span>'
+      +'<span class="rail-years">'+e+'</span><span class="rail-fill"></span></div>').join("");
+  }
+  Array.from(trk.children).forEach((seg,i)=>{
+    seg.classList.toggle("done",i<tRes);
+    seg.classList.toggle("now",i===current);
+    seg.classList.toggle("episode",i<GAME.episodes.length&&GAME.episodes[i]);
+  });
+}
+
+/* ---------- indicator tables ---------- */
+function indicatorTable(tRes,withPrev){
+  let h="<thead><tr><th>series</th><th>unit</th><th style='text-align:right'>latest</th>"
+    +"<th style='text-align:right'>change</th><th>as of</th><th>status</th></tr></thead><tbody>";
+  CH.forEach(c=>{
+    const pt=pubTag(c.key,tRes);
+    let latest=null,prev=null,asof="2025";
+    if(pt.latest>=0&&pt.latest<GAME.history.length){
+      latest=GAME.history[pt.latest][c.key];asof=P.epochs[pt.latest];
+      prev=pt.latest>0?GAME.history[pt.latest-1][c.key]:c.y0;
+    }else{latest=c.y0;prev=null;}
+    let fromVal=latest;
+    if(withPrev){
+      const p0=pubTag(c.key,tRes-1);
+      fromVal=(p0.latest>=0&&p0.latest<GAME.history.length)
+        ?GAME.history[p0.latest][c.key]:c.y0;
+    }
+    const d=prev==null?"":(latest-prev>=0?"+":"")+fmt(c.key,latest-prev);
+    const tagCls=pt.tag==="provisional"?"prov":(pt.tag?"await":"");
+    const cell=withPrev
+      ?"<span class='tickcell' data-from='"+fromVal+"' data-to='"+latest
+        +"' data-dp='"+c.dp+"'>"+fmt(c.key,fromVal)+"</span>"
+      :fmt(c.key,latest);
+    h+="<tr><td class='sc'>"+c.label+"</td><td class='quiet'>"+c.unit+"</td>"
+      +"<td class='num'>"+cell+"</td><td class='num quiet'>"+d+"</td>"
+      +"<td class='tag'>"+asof+"</td><td class='tag "+tagCls+"'>"+(pt.tag||"final")+"</td></tr>";
+  });
+  return h+"</tbody>";
+}
+
+/* ---------- flow ---------- */
+function seatOrder(){return GAME.mode==="hotseat"?["blue","red"]
+  :GAME.mode==="solo_blue"?["blue"]:["red"];}
+
+function startGame(){
+  GAME.seed=$("seed").value.trim()||"20260724";
+  GAME.mode=document.querySelector('input[name="mode"]:checked').value;
+  GAME.archetype=$("archetype").value;
+  P.moves.world.forEach(w=>{
+    const el=document.querySelector('input[name="world-'+w.key+'"]:checked');
+    GAME.world[w.key]=w.levels[el?parseInt(el.value,10):1].value;});
+  const r=rngFor("sealed");
+  GAME.sealed.g_shock=PARAM.g_shock.lo+r()*(PARAM.g_shock.hi-PARAM.g_shock.lo);
+  GAME.sealed.g_growth=PARAM.g_growth.lo+r()*(PARAM.g_growth.hi-PARAM.g_growth.lo);
+  GAME.turn=0;GAME.commits={blue:[],red:[]};GAME.intervals={blue:[],red:[]};
+  GAME.cost={blue:0,red:0};GAME.state=initState();GAME.history=[];GAME.episodes=[];
+  GAME.posterior=[pathwayScores(0,false)];
+  conveneThen(beginCommitSequence);
+}
+function conveneThen(fn){
+  if(REDUCED){fn();return;}
+  const box=$("handoff"),txt=$("handoff-text"),btn=$("btn-handoff");
+  btn.style.display="none";
+  txt.innerHTML='<div class="convene-line">constituting the committees</div>'
+    +'<div class="convene-line" style="animation-delay:.35s">drawing sealed parameters</div>'
+    +'<div class="convene-line" style="animation-delay:.7s">opening the record, 2025</div>';
+  box.classList.add("active");
+  setTimeout(()=>{box.classList.remove("active");btn.style.display="";
+    txt.textContent="";fn();},1250);
+}
+function sealThen(fn){
+  if(REDUCED){fn();return;}
+  const s=$("seal");s.classList.add("active");
+  setTimeout(()=>{s.classList.remove("active");fn();},620);
+}
+function beginCommitSequence(){
+  GAME.pendingSide=seatOrder()[0];
+  if(GAME.mode==="hotseat")handoffThen(GAME.pendingSide,()=>renderCommit(GAME.pendingSide));
+  else renderCommit(GAME.pendingSide);
+}
+function handoffThen(side,fn){
+  $("handoff-text").textContent="Pass the device to the "
+    +(side==="blue"?"Blue":"Red")+" committee. The counterpart should step away before continuing.";
+  $("handoff").classList.add("active");
+  $("btn-handoff").onclick=()=>{$("btn-handoff").onclick=null;
+    $("handoff").classList.remove("active");fn();};
+}
+
+function renderCommit(side){
+  SKIP=false;
+  renderRail(GAME.turn,GAME.turn);
+  const banner=$("commit-banner");
+  banner.classList.remove("seat-blue","seat-red");
+  banner.classList.add(side==="blue"?"seat-blue":"seat-red");
+  $("commit-who").textContent=(side==="blue"?"Blue":"Red")+" committee";
+  $("commit-period").textContent="Move sheet, Period "+ROMAN[GAME.turn]+": "+P.epochs[GAME.turn];
+  $("indicator-table").innerHTML=indicatorTable(GAME.turn);
+  $("move-menus").innerHTML=moveMenuHTML(side,"mv");
+  optionWire($("move-menus"));
+  const sel=$("commit-chan");
+  if(!sel.options.length)CH.forEach(c=>sel.add(new Option(c.label,c.key)));
+  let intDirty=false;
+  $("int-lo").oninput=()=>{intDirty=true;};
+  $("int-hi").oninput=()=>{intDirty=true;};
+  const refresh=()=>{
+    const lv=readLevels(side,"mv");
+    const res=emuAll(effVector(side,GAME.turn,lv));
+    drawFan("commit-fan",res,sel.value,visibleVals(sel.value,GAME.turn),
+      CH[CHIX[sel.value]].label+", committee estimate");
+    const aw=res.awrp[GAME.turn];
+    if(!intDirty){$("int-lo").value=aw[0].toFixed(2);$("int-hi").value=aw[2].toFixed(2);}
+    $("int-hint").textContent="committee fan for this period: "
+      +aw[0].toFixed(2)+" to "+aw[2].toFixed(2);
+    $("commit-cost").textContent="commitment expenditure this period: "
+      +levelsCost(side,lv)+" (cumulative "+GAME.cost[side]+")";
+  };
+  sel.onchange=refresh;
+  if(GAME.commitHandler)$("move-menus").removeEventListener("optsel",GAME.commitHandler);
+  GAME.commitHandler=refresh;
+  $("move-menus").addEventListener("optsel",refresh);
+  refresh();
+  $("btn-commit").onclick=()=>submitCommit(side);
+  show("scr-commit");
+}
+
+function submitCommit(side){
+  if(GAME.commits[side].length>GAME.turn)return; /* already sealed this period */
+  const lo=parseFloat($("int-lo").value),hi=parseFloat($("int-hi").value);
+  if(!(isFinite(lo)&&isFinite(hi)&&lo<hi)){alert("State a valid interval: lower below upper.");return;}
+  const lv=readLevels(side,"mv");
+  GAME.commits[side].push({levels:lv});
+  GAME.cost[side]+=levelsCost(side,lv);
+  GAME.intervals[side].push([lo,hi]);
+  const order=seatOrder(),idx=order.indexOf(side);
+  if(idx+1<order.length){
+    GAME.pendingSide=order[idx+1];
+    sealThen(()=>handoffThen(GAME.pendingSide,()=>renderCommit(GAME.pendingSide)));
+  }else{
+    const human=order;
+    ["blue","red"].forEach(s=>{
+      if(!human.includes(s)){
+        const alv=aiLevels(s,GAME.turn);
+        GAME.commits[s].push({levels:alv});
+        GAME.cost[s]+=levelsCost(s,alv);
+        const res=emuAll(effVector(s,GAME.turn,alv)).awrp[GAME.turn];
+        GAME.intervals[s].push([res[0],res[2]]);
+      }});
+    sealThen(resolveTurn);
+  }
+}
+
+function resolveTurn(){
+  const t=GAME.turn;
+  const x=buildX(stanceFromLevels("blue",GAME.commits.blue[t].levels),
+                 stanceFromLevels("red",GAME.commits.red[t].levels),
+                 GAME.world,GAME.sealed);
+  const d=drawEpoch(rngFor("epoch|"+t));
+  const out=stepEpoch(GAME.state,x,d);
+  GAME.history.push(out.vals);GAME.episodes.push(out.ep===1);
+  GAME.posterior.push(pathwayScores(t+1,false));
+  renderResolve();
+}
+
+function renderResolve(){
+  const t=GAME.turn,tRes=t+1;
+  SKIP=false;
+  $("resolve-period").textContent="Period "+ROMAN[t]+": "+P.epochs[t];
+  const circ=$("circulars");circ.innerHTML="";
+  $("resolve-table").innerHTML="";
+  $("interval-table").innerHTML="";
+  $("leader-note").classList.remove("show");$("leader-note").textContent="";
+  const sel=$("resolve-chan");
+  if(!sel.options.length)CH.forEach(c=>sel.add(new Option(c.label,c.key)));
+  const res=emuAll(refVector());
+  const circularHTML=()=>{
+    if(GAME.episodes[t]){
+      const n=GAME.episodes.filter(Boolean).length;
+      return '<div class="circular"><div class="chead">'
+        +'<span>Resolution circular RC-'+EPOCH_END[t]+"/"
+        +String(n).padStart(2,"0")+'</span><span>listed conditions</span></div>'
+        +'<p>A chokepoint disruption episode is declared for the period. Listed areas extended; '
+        +'additional war risk premium fixed this period at '
+        +fmt("awrp",GAME.history[t].awrp)+' percent of hull and machinery value. '
+        +'Cover in affected waters is conditional on payment of the additional premium.</p></div>';
+    }
+    return '<p class="quiet">No episode declared this period. Listed areas unchanged.</p>';
+  };
+  const intervalHTML=animated=>{
+    const xr=GAME.history[t].awrp,a=P.scoring.alpha;
+    let it="<thead><tr><th>committee</th><th style='text-align:right'>stated interval</th>"
+      +"<th style='text-align:right'>fixing</th><th style='text-align:right'>score</th></tr></thead><tbody>";
+    ["blue","red"].forEach(s=>{
+      const [L,U]=GAME.intervals[s][t],sc=winkler(L,U,xr,a);
+      const hit=xr>=L&&xr<=U;
+      const scoreCell=animated
+        ?"<span class='tickcell' data-from='0' data-to='"+sc+"' data-dp='2'>0.00</span>"
+        :sc.toFixed(2);
+      it+="<tr><td class='sc' style='color:var(--"+s+")'>"+s+"</td>"
+        +"<td class='num'>"+L.toFixed(2)+" to "+U.toFixed(2)+"</td>"
+        +"<td class='num'>"+xr.toFixed(2)+"</td>"
+        +"<td class='num "+(hit?"score-ok":"score-miss")+"'>"+scoreCell+"</td></tr>";});
+    return it+"</tbody>";
+  };
+  const drawResolveFan=()=>drawFan("resolve-fan",res,sel.value,visibleVals(sel.value,tRes),
+    CH[CHIX[sel.value]].label+", reference estimate");
+  sel.onchange=drawResolveFan;
+  const prevLead=Object.entries(GAME.posterior[t]).sort((a,b)=>b[1]-a[1])[0][0];
+  const newLead=Object.entries(GAME.posterior[t+1]).sort((a,b)=>b[1]-a[1])[0][0];
+  const leaderNote=()=>{
+    if(prevLead!==newLead){
+      $("leader-note").textContent="The posterior has shifted: the leading pathway is now "
+        +newLead+".";
+      $("leader-note").classList.add("show");}
+  };
+  let finished=false,proceeded=false;
+  const applyFinal=()=>{
+    if(finished)return;finished=true;
+    circ.innerHTML=circularHTML();
+    $("resolve-table").innerHTML=indicatorTable(tRes,false);
+    drawResolveFan();
+    $("interval-table").innerHTML=intervalHTML(false);
+    drawPosterior("posterior-chart",GAME.posterior);
+    leaderNote();
+    renderRail(tRes,t);
+  };
+  const proceed=()=>{
+    if(proceeded)return;proceeded=true;
+    GAME.turn++;
+    if(GAME.turn<T)beginCommitSequence();else renderDebrief();
+  };
+  $("btn-next").textContent=t+1<T?"Proceed to Period "+ROMAN[t+1]:"Close the horizon";
+  $("btn-next").onclick=()=>{skipAll();applyFinal();proceed();};
+  show("scr-resolve");
+  playResolution();
+
+  async function playResolution(){
+    renderRail(t,t);
+    await pause(350);if(SKIP||finished){applyFinal();return;}
+    renderRail(tRes,t);
+    circ.innerHTML=circularHTML();
+    const cEl=circ.firstElementChild;
+    if(cEl&&GAME.episodes[t]&&!REDUCED)cEl.classList.add("stamp");
+    await pause(GAME.episodes[t]?900:350);if(SKIP||finished){applyFinal();return;}
+    $("resolve-table").innerHTML=indicatorTable(tRes,true);
+    const cells=Array.from(document.querySelectorAll("#resolve-table .tickcell"));
+    cells.forEach((el,i)=>{
+      const from=parseFloat(el.dataset.from),to=parseFloat(el.dataset.to),
+            dp=parseInt(el.dataset.dp,10);
+      if(from===to){el.textContent=to.toFixed(dp);return;}
+      setTimeout(()=>tick(el,from,to,dp,650),REDUCED||SKIP?0:i*110);});
+    await pause(1050);if(SKIP||finished){applyFinal();return;}
+    drawResolveFan();
+    await pause(450);if(SKIP||finished){applyFinal();return;}
+    $("interval-table").innerHTML=intervalHTML(true);
+    stagger(Array.from(document.querySelectorAll("#interval-table tbody tr")),140);
+    document.querySelectorAll("#interval-table .tickcell").forEach((el,i)=>{
+      setTimeout(()=>tick(el,0,parseFloat(el.dataset.to),2,600),
+        REDUCED||SKIP?0:250+i*160);});
+    await pause(800);if(SKIP||finished){applyFinal();return;}
+    drawPosterior("posterior-chart",GAME.posterior);
+    await pause(300);
+    leaderNote();
+    finished=true;
+  }
+}
+
+/* ---------- debrief ---------- */
+function scoreCard(side){
+  const last=GAME.history[T-1];
+  let met=0,rows=P.thresholds[side].map(th=>{
+    const v=last[th.channel];
+    const ok=th.op===">="?v>=th.value:v<=th.value;if(ok)met++;
+    return "<li class='"+(ok?"score-ok":"score-miss")+"'>"+(ok?"\u2713 ":"\u2717 ")
+      +th.label+" <span class='quiet mono'>("+fmt(th.channel,v)+")</span></li>";
+  }).join("");
+  const iv=GAME.intervals[side].reduce((s,pair,t)=>s+winkler(pair[0],pair[1],GAME.history[t].awrp,P.scoring.alpha),0);
+  return "<ul class='plain'>"+rows+"</ul>"
+    +"<p>Objectives attained: <b>"+met+" of "+P.thresholds[side].length+"</b><br>"
+    +"Commitment expenditure: <b><span class='tickcell mono' data-from='0' data-to='"
+    +GAME.cost[side]+"' data-dp='0'>0</span></b><br>"
+    +"Interval score, total: <b><span class='tickcell mono' data-from='0' data-to='"
+    +iv.toFixed(2)+"' data-dp='2'>0.00</span></b> <span class='quiet'>(lower is better)</span></p>";
+}
+function renderDebrief(){
+  renderRail(T,-1);
+  $("score-blue").innerHTML=scoreCard("blue");
+  $("score-red").innerHTML=scoreCard("red");
+  stagger(Array.from(document.querySelectorAll("#score-blue li, #score-red li")),110);
+  document.querySelectorAll("#score-blue .tickcell, #score-red .tickcell").forEach((el,i)=>{
+    setTimeout(()=>tick(el,0,parseFloat(el.dataset.to),parseInt(el.dataset.dp,10),700),
+      REDUCED?0:400+i*150);});
+  const sel=$("debrief-chan");
+  if(!sel.options.length)CH.forEach(c=>sel.add(new Option(c.label,c.key)));
+  const res=emuAll(jointVector());
+  const redraw=()=>drawFan("debrief-fan",res,sel.value,
+    GAME.history.map(h=>h[sel.value]),CH[CHIX[sel.value]].label+", joint conditional fan");
+  sel.onchange=redraw;redraw();
+  const finalPost=pathwayScores(T,true);
+  GAME.posterior.push(finalPost);
+  drawPosterior("debrief-posterior",GAME.posterior);
+  const lead=Object.entries(finalPost).sort((a,b)=>b[1]-a[1])[0];
+  $("pathway-verdict").innerHTML="<p>The play conditioned most heavily on the <b>"+lead[0]
+    +"</b> pathway, posterior "+(100*lead[1]).toFixed(0)+" percent at the close, sealed parameters revealed. "
+    +"Episodes declared: "+GAME.episodes.filter(Boolean).length+" of "+T+" periods.</p>";
+  $("sealed-reveal").innerHTML="<p class='mono'>shock propensity "+GAME.sealed.g_shock.toFixed(2)
+    +"<br>red macroeconomic tailwind "+GAME.sealed.g_growth.toFixed(2)+"</p>";
+  let mr="<thead><tr><th>period</th><th style='color:var(--blue)'>blue</th>"
+    +"<th style='color:var(--red)'>red</th><th>episode</th></tr></thead><tbody>";
+  for(let t=0;t<T;t++){
+    const bl=GAME.commits.blue[t].levels.map((li,mi)=>sideParams("blue")[mi].levels[li].label).join("; ");
+    const rl=GAME.commits.red[t].levels.map((li,mi)=>sideParams("red")[mi].levels[li].label).join("; ");
+    mr+="<tr><td class='sc'>"+ROMAN[t]+"</td><td>"+bl+"</td><td>"+rl+"</td>"
+      +"<td>"+(GAME.episodes[t]?"declared":"none")+"</td></tr>";}
+  $("move-record").innerHTML=mr+"</tbody>";
+  $("methods-debrief").innerHTML=methodsHTML();
+  $("btn-restart").onclick=()=>{location.reload();};
+  show("scr-debrief");
+}
+
+/* ---------- methods ---------- */
+function methodsHTML(){
+  const v=P.validation.per_channel;
+  let vt="<table><thead><tr><th>series</th><th style='text-align:right'>R squared, median</th>"
+    +"<th style='text-align:right'>R squared, minimum</th>"
+    +"<th style='text-align:right'>RMSE, median</th></tr></thead><tbody>";
+  CH.forEach(c=>{const x=v[c.key];
+    vt+="<tr><td class='sc'>"+c.label+"</td><td class='num'>"+x.r2_median.toFixed(3)
+      +"</td><td class='num'>"+x.r2_min.toFixed(3)+"</td><td class='num'>"
+      +x.rmse_median.toFixed(3)+"</td></tr>";});
+  vt+="</tbody></table>";
+  return "<p>Moves are stances on named parameters of the generative recursion documented in "
+    +"<span class='mono'>build_data.py</span>; they condition the forecast and do not "
+    +"script the outcome. Conditional fans are produced by a fitted emulator, a degree two "
+    +"polynomial response surface trained on a "+P.meta.design+" design of "+P.meta.n_design
+    +" points with "+P.meta.n_draws+" stochastic draws per point, seed "+P.meta.seed+". "
+    +"The resolution path is one seeded draw of the same recursion, so realized values and fans "
+    +"share a single generative process. Held out error on a reserved fifth of the design:</p>"
+    +vt
+    +"<p>Fans are conditioned in three tiers. On a committee's own move sheet, the fan conditions "
+    +"on that committee's stance held forward with the counterpart and the sealed world parameters "
+    +"at reference values. The shared resolution screen shows a reference fan with all stances at "
+    +"reference values, so it discloses neither committee's sealed choices. The debrief fan "
+    +"conditions on the true joint record and the revealed sealed parameters. A stance path is "
+    +"aggregated to a horizon constant conditioning vector for the emulator; a time varying "
+    +"emulator is noted as future work.</p>"
+    +"<p>Indicators publish on schedule: the war risk premium fixes within the period; "
+    +"expenditure series appear as provisional figures in the period and are finalized in the "
+    +"next; reserve composition, export shares, and warhead estimates publish one period behind. "
+    +"Calibration anchors, including the 2026 Gulf episode in which the additional premium moved "
+    +"from roughly 0.15 to 0.20 percent of hull value to about one percent under circular "
+    +"JWLA-033, are documented in the build script. Raw SIPRI and IMF files are excluded from the "
+    +"repository under publisher terms.</p>"
+    +"<p>Scoring is not zero sum: objective attainment against fixed side specific criteria, "
+    +"commitment expenditure, and a Winkler interval score at eighty percent nominal coverage. "
+    +"In solo play the scripted committee states its own emulator fan as its interval. "
+    +"License CC BY-NC 4.0.</p>";
+}
+
+/* ---------- boot ---------- */
+function boot(){
+  const wm=$("world-menus");
+  wm.innerHTML=P.moves.world.map(w=>{
+    const opts=w.levels.map((lv,li)=>
+      '<label class="opt'+(li===1?" sel":"")+'" data-grp="world-'+w.key+'">'
+      +'<input type="radio" name="world-'+w.key+'" value="'+li+'"'+(li===1?" checked":"")+'>'
+      +'<span class="ol">'+lv.label+'</span><br><span class="ob">'+lv.brief+'</span></label>').join("");
+    return '<div class="movecat"><span class="leg">'+w.label+'</span>'+opts+'</div>';
+  }).join("");
+  optionWire(document.querySelector("#scr-setup"));
+  const modeSync=()=>{const m=document.querySelector('input[name="mode"]:checked').value;
+    $("arch-block").style.display=m==="solo_blue"?"block":"none";};
+  document.querySelectorAll('input[name="mode"]').forEach(i=>i.addEventListener("change",modeSync));
+  document.querySelector("#scr-setup").addEventListener("optsel",modeSync);
+  modeSync();
+  $("methods-setup").innerHTML=methodsHTML();
+  $("btn-start").onclick=startGame;
+  /* self check: emulator monotonicity at the reference point */
+  const chk=emuAll(refVector());
+  CHKEY.forEach(k=>chk[k].forEach(tr=>{
+    if(!(tr[0]<=tr[1]&&tr[1]<=tr[2]))console.warn("quantile order",k,tr);}));
+}
+document.addEventListener("DOMContentLoaded",boot);
+</script>
+</body>
+</html>
