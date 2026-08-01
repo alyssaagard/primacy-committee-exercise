@@ -59,10 +59,18 @@ premium, at 2.3 percent, attributable to draw counts. Full method in
 
 ```bash
 python3 build_data.py    # design, simulation, emulator fit, validation; writes payload.json
-python3 build_page.py    # injects the payload into template.html; writes index.html
+python3 build_social.py  # renders both share card variants
+python3 build_page.py    # injects the payload and site URL; writes index.html
 ```
 
-numpy required, scipy preferred for the Sobol design. Seed 20260724 throughout, so the
+Set `SITE_URL` in `build_page.py`, or pass it at build time, before the first
+publish. `SOCIAL_CARD` in the same file selects which share card `og:image` points
+at, and `PLATE_CREDIT` in `build_social.py` carries the image credit line printed on
+the plate variant. All three warn or fail rather than publishing a placeholder. Share card scrapers require absolute URLs, so `og:image` and `og:url` are
+the only absolute references on the page; everything else stays relative so the site
+works under a project path.
+
+numpy and pillow required, scipy preferred for the Sobol design. Seed 20260724 throughout, so the
 same seed reproduces the same design, coefficients, sealed draws, and resolution path.
 The included GitHub Actions workflow rebuilds on every push and fails if the committed
 `index.html` does not match a fresh rebuild, so reproducibility is checked rather than
@@ -87,6 +95,12 @@ hardcoded with provenance in the `build_data.py` header.
 | `apple-touch-icon.png` | iOS home screen icon, flattened to an opaque background |
 | `android-chrome-192x192.png`, `android-chrome-512x512.png` | Android and PWA icons |
 | `site.webmanifest` | Web app manifest, relative paths for project page hosting |
+| `social-card-photo.png` | Open Graph share image, photograph only, 1200 x 630, current default |
+| `social-card-plate.png` | Open Graph share image, photographic plate variant, 1200 x 630 |
+| `social-card.png` | Open Graph share image, conditional fan variant, 1200 x 630 |
+| `social-card-github.png` | Repository social preview, 1280 x 640 |
+| `social-plate-source.jpg` | Source photograph for the plate variant, used by permission |
+| `build_social.py` | Renders both share cards |
 | `.github/workflows/build.yml` | Reproducibility check on every push |
 
 ## Publish
