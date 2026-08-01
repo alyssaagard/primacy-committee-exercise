@@ -83,6 +83,10 @@ hardcoded with provenance in the `build_data.py` header.
 | `template.html` | Page template with the engine, payload token unfilled |
 | `payload.json` | Generated: emulator coefficients, constants, move menus, thresholds, validation |
 | `METHOD.md` | Full design and method documentation |
+| `favicon.ico`, `favicon-16x16.png`, `favicon-32x32.png` | Browser tab icons |
+| `apple-touch-icon.png` | iOS home screen icon, flattened to an opaque background |
+| `android-chrome-192x192.png`, `android-chrome-512x512.png` | Android and PWA icons |
+| `site.webmanifest` | Web app manifest, relative paths for project page hosting |
 | `.github/workflows/build.yml` | Reproducibility check on every push |
 
 ## Publish
