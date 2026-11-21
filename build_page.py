@@ -1,69 +1,53 @@
 #!/usr/bin/env python3
 """
 build_page.py
-Injects payload.json and the site URL into template.html and writes
-index.html at the repository root.
+Stage 3. Assembles index.html.
 
-The site URL exists because Open Graph and Twitter card scrapers require
-absolute URLs for og:image and og:url. Every other asset reference on the page
-is relative, which is what keeps the site working under a GitHub Pages project
-path; the share card tags are the one exception the specification forces.
+Inlines engine.js, payload.json, and reference.json into template.html, and
+sets the absolute site address that share card tags require. All other
+asset references on the page are relative.
 
-Set the URL once below, or override at build time:
+    python build_page.py
+    SITE_URL=https://example.org/exercise python build_page.py
 
-    SITE_URL=https://example.github.io/repo python3 build_page.py
+Writes: index.html
 """
 
 import os
-import pathlib
+from pathlib import Path
 
-# Edit this one line after creating the repository, or set the SITE_URL
-# environment variable. No trailing slash.
-SITE_URL = "https://USERNAME.github.io/primacy-committee-exercise"
+SITE_URL = "https://alyssaagard.github.io/primacy-committee-exercise"
+SOCIAL_CARD = "social-card.png"
 
-# Which share card og:image points at. Both are built by build_social.py:
-#   social-card-plate.png  the photographic plate
-#   social-card.png        the conditional fan
-SOCIAL_CARD = "social-card-photo.jpg"
-
-HERE = pathlib.Path(__file__).resolve().parent
-TEMPLATE = HERE / "template.html"
-PAYLOAD = HERE / "payload.json"
-OUT = HERE / "index.html"
-TOKEN = "/*__PAYLOAD__*/null"
-URL_TOKEN = "__SITE_URL__"
-CARD_TOKEN = "__SOCIAL_CARD__"
-TYPE_TOKEN = "__SOCIAL_CARD_TYPE__"
+HERE = Path(__file__).resolve().parent
+TOKENS = {
+    "/*__ENGINE__*/": "engine.js",
+    "/*__PAYLOAD__*/null": "payload.json",
+    "/*__REFERENCE__*/null": "reference.json",
+}
 
 
-def main():
+def main() -> None:
+    html = (HERE / "template.html").read_text(encoding="utf-8")
+    for token, name in TOKENS.items():
+        if html.count(token) != 1:
+            raise SystemExit(f"token for {name} not found exactly once")
+        text = (HERE / name).read_text(encoding="utf-8").strip()
+        if "</script" in text.lower():
+            raise SystemExit(f"{name} contains a script terminator")
+        html = html.replace(token, text)
     site = os.environ.get("SITE_URL", SITE_URL).rstrip("/")
-    if "USERNAME" in site:
-        print("WARNING: SITE_URL is still a placeholder. Share cards will not")
-        print("         resolve until you set it in build_page.py or the")
-        print("         SITE_URL environment variable.")
-
-    html = TEMPLATE.read_text(encoding="utf-8")
-    payload = PAYLOAD.read_text(encoding="utf-8")
-    if TOKEN not in html:
-        raise SystemExit("payload token not found in template")
-    if URL_TOKEN not in html:
-        raise SystemExit("site url token not found in template")
-    if CARD_TOKEN not in html:
-        raise SystemExit("social card token not found in template")
     card = os.environ.get("SOCIAL_CARD", SOCIAL_CARD)
     if not (HERE / card).exists():
-        raise SystemExit(f"share card missing: {card}. Run build_social.py first.")
-    if "</script" in payload.lower():
-        raise SystemExit("payload contains a script terminator; refuse to inject")
-
-    html = html.replace(TOKEN, payload, 1)
-    html = html.replace(URL_TOKEN, site)
-    html = html.replace(CARD_TOKEN, card)
+        raise SystemExit(f"share card missing: {card}. Run build_social.py.")
     mime = "image/jpeg" if card.lower().endswith((".jpg", ".jpeg")) else "image/png"
-    html = html.replace(TYPE_TOKEN, mime)
-    OUT.write_text(html, encoding="utf-8")
-    print(f"wrote {OUT} ({os.path.getsize(OUT)/1024:.0f} KB), site {site}, card {card}")
+    html = (html.replace("__SITE_URL__", site)
+                .replace("__SOCIAL_CARD_TYPE__", mime)
+                .replace("__SOCIAL_CARD__", card))
+    out = HERE / "index.html"
+    out.write_text(html, encoding="utf-8")
+    print(f"index.html written, {out.stat().st_size / 1024:.0f} KB; "
+          f"site {site}; card {card}")
 
 
 if __name__ == "__main__":

@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Committee Exercise · The Primacy Premium</title>
-<meta name="description" content="A two sided conditional forecasting wargame on Chinese military primacy, 2026 to 2035, with sealed simultaneous play, publication lag fog, and emulator served forecast fans.">
-<meta property="og:title" content="Committee Exercise · The Primacy Premium">
-<meta property="og:description" content="Two committees, five periods, sealed simultaneous stances. Indicators publish late and partial. Scoring is not zero sum.">
+<title>Committee Exercise | The Primacy Premium</title>
+<meta name="description" content="A four-seat budget exercise on the estimated model of The Primacy Premium, 2026 to 2035. Sealed simultaneous commitments, publication lags, scored interval statements.">
+<meta property="og:title" content="Committee Exercise | The Primacy Premium">
+<meta property="og:description" content="Four seats, five periods, sealed commitments on real military expenditure. The estimated model resolves every seat a committee does not hold.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="The Primacy Premium">
 <meta property="og:url" content="__SITE_URL__/">
@@ -17,8 +17,8 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Committee Exercise, The Primacy Premium.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Committee Exercise · The Primacy Premium">
-<meta name="twitter:description" content="Two committees, five periods, sealed simultaneous stances. Indicators publish late and partial. Scoring is not zero sum.">
+<meta name="twitter:title" content="Committee Exercise | The Primacy Premium">
+<meta name="twitter:description" content="Four seats, five periods, sealed commitments on real military expenditure. The estimated model resolves every seat a committee does not hold.">
 <meta name="twitter:image" content="__SITE_URL__/__SOCIAL_CARD__">
 <meta name="twitter:image:alt" content="Committee Exercise, The Primacy Premium.">
 <link rel="canonical" href="__SITE_URL__/">
@@ -31,1063 +31,830 @@
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
 <style>
   :root{
-    --page:#fff8fd; --panel:#fce8f4; --alt:#f6f0f4;
-    --ink:#241d26; --muted:#6d5a66; --rule:#9c6f86;
-    --blue:#31456e; --red:#7d3644; --band:rgba(156,111,134,.16);
+    --page:#fff8fd; --panel:#fce8f4; --alt:#f6f0f4; --field:#fffdfe;
+    --ink:#241d26; --muted:#6d5a66; --rule:#9c6f86; --dot:#d9bfce;
+    --us:#31456e; --cn:#7d3644; --eu:#3f6257; --ip:#7a6231;
+    --band:rgba(156,111,134,.16);
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{background:var(--page);color:var(--ink);
        font-family:"Times New Roman",Times,serif;font-size:17px;line-height:1.55}
-  .wrap{max-width:1060px;margin:0 auto;padding:2.2rem 1.2rem 4rem}
+  .wrap{max-width:1060px;margin:0 auto;padding:1.6rem 1.2rem 2.4rem}
   .sc{font-variant:small-caps;letter-spacing:.08em}
   .rule2{border:0;border-top:4px double var(--rule);margin:1.1rem 0}
   .rule1{border:0;border-top:1px solid var(--rule);margin:.9rem 0}
-  header.front{text-align:center;margin-bottom:1.4rem}
-  .eyebrow{font-variant:small-caps;letter-spacing:.28em;color:var(--muted);font-size:.85rem}
+
+  /* Marking line, top and bottom, as on exercise papers. */
+  .marking{display:flex;justify-content:center;gap:2.6rem;flex-wrap:wrap;
+           font-variant:small-caps;letter-spacing:.2em;font-size:.82rem;
+           color:var(--muted);padding:.35rem 1rem;background:var(--alt);
+           border-bottom:1px solid var(--rule)}
+  .marking.foot{border-bottom:0;border-top:1px solid var(--rule)}
+  @media(max-width:560px){.marking{gap:.9rem;letter-spacing:.1em;font-size:.72rem}}
+
+  header.front{text-align:center;margin:.6rem 0 1.2rem}
+  .series{font-variant:small-caps;letter-spacing:.28em;color:var(--muted);font-size:.85rem}
   h1{font-size:2.35rem;font-weight:400;margin:.35rem 0 .15rem;letter-spacing:.01em}
   .subtitle{font-style:italic;color:var(--muted);margin:0 0 .6rem}
   .byline{font-variant:small-caps;letter-spacing:.14em;font-size:.95rem}
-  h2{font-size:1.15rem;font-weight:400;font-variant:small-caps;letter-spacing:.12em;margin:1.6rem 0 .5rem}
-  h3{font-size:1rem;font-weight:700;margin:1.1rem 0 .35rem}
+  header.compact{display:flex;justify-content:space-between;align-items:baseline;
+                 gap:1rem;flex-wrap:wrap;margin:.2rem 0 .7rem}
+  header.compact .t{font-size:1.25rem}
+  h2{font-size:1.15rem;font-weight:400;font-variant:small-caps;letter-spacing:.12em;
+     margin:1.6rem 0 .5rem}
+  h3{font-size:1.02rem;font-weight:400;font-style:italic;margin:1.1rem 0 .35rem}
   p{margin:.5rem 0}
-  .screen{display:none}
-  .screen.active{display:block}
+  .measure{max-width:46rem}
+  a{color:var(--cn)}
+  .quiet{color:var(--muted);font-size:.92rem}
+  .num{font-variant-numeric:tabular-nums}
+
   .panel{background:var(--panel);border:1px solid var(--rule);padding:1.1rem 1.3rem;margin:1rem 0}
   .panel.alt{background:var(--alt)}
-  .side-banner{display:flex;justify-content:space-between;align-items:baseline;
-               border-top:4px double var(--rule);border-bottom:4px double var(--rule);
-               padding:.45rem .2rem;margin:.8rem 0 1rem}
-  .side-banner .who{font-variant:small-caps;letter-spacing:.2em;font-size:1.15rem}
-  .seat-blue .who{color:var(--blue)} .seat-red .who{color:var(--red)}
-  .period-tag{font-variant:small-caps;letter-spacing:.14em;color:var(--muted)}
+  .panel.sheet{background:var(--field);border:4px double var(--rule)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem}
+  .grid2.seatgrid{grid-template-columns:minmax(0,5fr) minmax(0,7fr)}
+  @media(max-width:820px){.grid2,.grid2.seatgrid{grid-template-columns:1fr}}
+  td.nw,th.nw{white-space:nowrap}
+
+  /* Numbered paragraphs of the seat paper. */
+  .para{display:grid;grid-template-columns:2.2rem minmax(0,1fr);gap:0 .4rem;margin:1.5rem 0 0}
+  .para > div{min-width:0}
+  @media(max-width:560px){.para{grid-template-columns:1.4rem minmax(0,1fr)}
+    .rate .v{font-size:2.4rem} .panel{padding:.9rem .8rem}}
+  .para > .n{font-size:1.15rem;color:var(--rule)}
+  .para > div > h2{margin-top:0}
+
   table{border-collapse:collapse;width:100%;font-size:.95rem}
   th{font-variant:small-caps;letter-spacing:.09em;font-weight:400;text-align:left;
-     border-bottom:1px solid var(--rule);padding:.3rem .5rem;color:var(--muted)}
-  td{padding:.3rem .5rem;border-bottom:1px dotted #d9bfce;vertical-align:top}
-  td.num{text-align:right;font-variant-numeric:tabular-nums}
-  .tag{font-size:.78rem;font-variant:small-caps;letter-spacing:.08em;color:var(--muted)}
-  .tag.prov{color:#8a6d1f}
-  .tag.await{color:#9a8390;font-style:italic}
-  .strip-scroll{overflow-x:auto}
-  .movecat{border:1px solid var(--rule);background:#fffdfe;margin:.8rem 0;padding:.7rem .9rem}
-  .movecat legend, .movecat .leg{font-variant:small-caps;letter-spacing:.1em;color:var(--muted);
-        font-size:.92rem;padding:0 .3rem;margin-bottom:.3rem;display:block}
-  .opt{display:block;border:1px solid transparent;border-left:4px double transparent;
-       padding:.4rem .6rem;margin:.25rem 0;cursor:pointer}
-  .opt:hover{background:var(--alt)}
-  .opt input{position:absolute;opacity:0;pointer-events:none}
-  .opt.sel{background:var(--alt);border-color:var(--rule)}
-  .opt .ol{font-weight:700}
-  .opt .ob{color:var(--muted);font-size:.92rem}
-  .cost{float:right;letter-spacing:.15em;color:var(--rule);font-size:.9rem}
+     border-bottom:1px solid var(--rule);padding:.3rem .5rem;color:var(--muted);
+     vertical-align:bottom}
+  td{padding:.3rem .5rem;border-bottom:1px dotted var(--dot);vertical-align:top}
+  th.r,td.r{text-align:right;font-variant-numeric:tabular-nums}
+  tr.total td{border-top:1px solid var(--rule);border-bottom:0}
+  tr.own td{background:var(--alt)}
+  caption{caption-side:bottom;text-align:left;color:var(--muted);font-size:.86rem;
+          padding:.45rem .5rem 0}
+  .scroll{overflow-x:auto}
+  .scroll > table{min-width:30rem}
+  .tag{font-size:.78rem;font-variant:small-caps;letter-spacing:.08em;color:var(--muted);
+       margin-left:.5rem;white-space:nowrap}
+  .swatch{display:inline-block;width:.6rem;height:.6rem;margin-right:.45rem;
+          vertical-align:baseline;background:var(--muted)}
+  .ok{color:#2c5e3a}.miss{color:#8a3b3b}
+
+  .banner{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;
+          flex-wrap:wrap;border-top:4px double var(--rule);border-bottom:4px double var(--rule);
+          padding:.45rem .2rem;margin:.8rem 0 1rem}
+  .banner .who{font-variant:small-caps;letter-spacing:.2em;font-size:1.15rem}
+  .banner .when{font-variant:small-caps;letter-spacing:.14em;color:var(--muted)}
+
   .btn{font-family:inherit;font-size:1rem;font-variant:small-caps;letter-spacing:.14em;
        background:var(--page);color:var(--ink);border:1px solid var(--ink);
        padding:.5rem 1.3rem;cursor:pointer;border-radius:0}
   .btn:hover{background:var(--ink);color:var(--page)}
   .btn.primary{border-width:2px}
-  .btn:focus-visible, .opt:focus-within, input:focus-visible, select:focus-visible{
-       outline:2px solid var(--red);outline-offset:2px}
+  .btn.small{font-size:.88rem;padding:.25rem .7rem;border-color:var(--rule)}
+  .btn.small:hover{background:var(--rule);color:var(--page)}
   .btnrow{margin:1.2rem 0;display:flex;gap:.8rem;flex-wrap:wrap;align-items:center}
-  input[type=text],input[type=number],select{
-       font-family:inherit;font-size:1rem;background:#fffdfe;color:var(--ink);
-       border:1px solid var(--rule);padding:.3rem .5rem;border-radius:0}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem}
-  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
-  .circular{border:1px solid var(--ink);background:#fffdfe;padding:.8rem 1rem;margin:.9rem 0}
-  .circular .chead{display:flex;justify-content:space-between;border-bottom:1px solid var(--ink);
-       padding-bottom:.3rem;margin-bottom:.5rem;font-variant:small-caps;letter-spacing:.12em}
-  .quiet{color:var(--muted);font-size:.92rem}
+  input[type=number],select{font-family:inherit;font-size:1rem;background:var(--field);
+       color:var(--ink);border:1px solid var(--rule);padding:.3rem .5rem;border-radius:0}
+  input.iv{width:5.4rem;text-align:right;font-variant-numeric:tabular-nums}
+  .btn:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,
+  .seatopt:focus-within{outline:2px solid var(--cn);outline-offset:2px}
+  .err{color:#8a3b3b;margin:.4rem 0;min-height:1.4em}
+
+  /* Seat table on the opening page. */
+  .seatopt{display:inline-flex;align-items:center;gap:.35rem;margin-right:1.1rem;cursor:pointer}
+  .seatopt input{accent-color:var(--rule)}
+
+  /* Commitment control. */
+  .rate{display:flex;align-items:baseline;gap:.6rem;margin:.2rem 0 .1rem}
+  .rate .v{font-size:3rem;line-height:1.05;font-variant-numeric:tabular-nums}
+  .rate .u{color:var(--muted)}
+  input[type=range]{width:100%;accent-color:var(--rule);margin:.5rem 0 0}
+  .scale{display:flex;justify-content:space-between;color:var(--muted);font-size:.84rem;
+         font-variant-numeric:tabular-nums}
+
+  .circular{border:1px solid var(--ink);background:var(--field);padding:.8rem 1rem;margin:.9rem 0}
+  .circular .chead{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+       border-bottom:1px solid var(--ink);padding-bottom:.3rem;margin-bottom:.5rem;
+       font-variant:small-caps;letter-spacing:.12em}
+
   .interstitial{position:fixed;inset:0;background:var(--page);display:none;z-index:50;
        align-items:center;justify-content:center;text-align:center;padding:2rem}
   .interstitial.active{display:flex}
   .interstitial .inner{max-width:34rem}
-  .seal{font-variant:small-caps;letter-spacing:.35em;font-size:1.4rem;border-top:4px double var(--rule);
-       border-bottom:4px double var(--rule);padding:.6rem 0;margin:1rem 0}
-  .score-ok{color:#2c5e3a}.score-miss{color:#8a3b3b}
+  .seal{font-variant:small-caps;letter-spacing:.35em;font-size:1.4rem;
+        border-top:4px double var(--rule);border-bottom:4px double var(--rule);
+        padding:.6rem 0;margin:1rem 0}
+
   .chart{width:100%;min-height:330px}
-  .chart.small{min-height:260px}
+  .chart.tall{min-height:400px}
   details{margin:.8rem 0}
   summary{cursor:pointer;font-variant:small-caps;letter-spacing:.1em;color:var(--muted)}
-  footer{margin-top:2.5rem;color:var(--muted);font-size:.92rem}
-  a{color:var(--red)}
-  .fanctl{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.4rem 0}
-  ul.plain{list-style:none;padding-left:0}
-  ul.plain li{margin:.3rem 0}
-  .mono{font-variant-numeric:tabular-nums}
+  footer{margin-top:2.2rem;color:var(--muted);font-size:.92rem}
+  ol.steps{padding-left:1.4rem;margin:.4rem 0}
+  ol.steps li{margin:.3rem 0}
+  ul.plain{list-style:none;padding-left:0;margin:.3rem 0}
+  ul.plain li{margin:.3rem 0;padding-left:1rem;text-indent:-1rem}
 
-  /* ---------- period rail ---------- */
-  #rail{margin:0 0 1.3rem}
+  /* Period rail. */
+  #rail{margin:0 0 1rem}
   .rail-track{display:flex;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
-  .rail-seg{flex:1;text-align:center;padding:.35rem .2rem;position:relative;color:var(--muted)}
-  .rail-seg+.rail-seg{border-left:1px dotted #d9bfce}
+  .rail-seg{flex:1;text-align:center;padding:.35rem .2rem;color:var(--muted)}
+  .rail-seg+.rail-seg{border-left:1px dotted var(--dot)}
   .rail-roman{font-variant:small-caps;letter-spacing:.16em;display:block;font-size:1.02rem}
-  .rail-years{font-size:.72rem;letter-spacing:.04em;display:block}
-  .rail-seg .rail-fill{position:absolute;left:0;right:0;bottom:-1px;height:0;
-      border-bottom:4px double var(--rule);transform:scaleX(0);transform-origin:left;
-      transition:transform .6s cubic-bezier(.2,.7,.2,1)}
-  .rail-seg.done{color:var(--ink)}
-  .rail-seg.done .rail-fill{transform:scaleX(1)}
-  .rail-seg.now{color:var(--ink)}
-  .rail-seg.now .rail-roman{border-bottom:4px double var(--ink);padding-bottom:.05rem}
-  .rail-pip{display:inline-block;width:.5rem;height:.5rem;border-radius:50%;
-      background:var(--red);margin-left:.3rem;vertical-align:middle;
-      opacity:0;transform:scale(.2);transition:opacity .4s,transform .4s}
-  .rail-seg.episode .rail-pip{opacity:1;transform:scale(1)}
+  .rail-years{font-size:.74rem;letter-spacing:.04em;display:block}
+  .rail-seg.done{color:var(--ink);box-shadow:inset 0 -4px 0 -1px var(--rule)}
+  .rail-seg.now{color:var(--ink);background:var(--alt)}
 
-  /* ---------- motion ---------- */
   .draw{transform:scaleX(0);transform-origin:center;animation:ruleDraw .8s .1s cubic-bezier(.2,.7,.2,1) forwards}
   @keyframes ruleDraw{to{transform:scaleX(1)}}
-  .stamp{animation:stampIn .55s cubic-bezier(.2,1.4,.4,1) both}
-  @keyframes stampIn{0%{opacity:0;transform:scale(1.18) rotate(-2.5deg)}
-      65%{opacity:1;transform:scale(.985) rotate(.4deg)}100%{opacity:1;transform:none}}
-  .reveal{opacity:0;transform:translateY(7px)}
-  .reveal.show{opacity:1;transform:none;transition:opacity .45s,transform .45s}
-  .tickcell{transition:color .3s}
-  .tickcell.live{color:var(--red)}
-  .leader-note{font-style:italic;color:var(--red);margin:.4rem 0 0;opacity:0;transition:opacity .6s}
-  .leader-note.show{opacity:1}
-  .seal-stamp{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
-      z-index:60;pointer-events:none}
-  .seal-stamp.active{display:flex}
-  .seal-stamp .ring{border:4px double var(--red);color:var(--red);border-radius:50%;
-      width:11rem;height:11rem;display:flex;align-items:center;justify-content:center;
-      font-variant:small-caps;letter-spacing:.3em;font-size:1.3rem;background:rgba(255,248,253,.88);
-      animation:sealPop .55s cubic-bezier(.2,1.5,.4,1) both}
-  @keyframes sealPop{0%{opacity:0;transform:scale(1.7) rotate(-8deg)}
-      70%{opacity:1;transform:scale(.95) rotate(1deg)}100%{opacity:1;transform:none}}
-  .convene-line{font-variant:small-caps;letter-spacing:.18em;color:var(--muted);
-      margin:.4rem 0;opacity:0;animation:fadeIn .4s forwards}
-  @keyframes fadeIn{to{opacity:1}}
-  .skipnote{font-size:.8rem;color:var(--muted);font-style:italic;text-align:right;margin:.2rem 0}
-  td.unpub{background:repeating-linear-gradient(45deg,#f6f0f4 0 6px,#fce8f4 6px 12px);
-      color:transparent;user-select:none}
-  .tag.prov{animation:provPulse 2.4s ease-in-out infinite}
-  @keyframes provPulse{0%,100%{opacity:1}50%{opacity:.45}}
-  .playorder li{margin:.45rem 0}
-  .opt{transition:background .16s,border-color .16s}
-  .btn{transition:background .14s,color .14s,transform .06s}
-  .btn:active{transform:translateY(1px)}
-  @media (prefers-reduced-motion: reduce){
-    *{animation:none!important;transition:none!important}
-    .draw{transform:none}.reveal{opacity:1;transform:none}
-    .rail-seg .rail-fill{transition:none}
-  }
+  @media (prefers-reduced-motion:reduce){.draw{animation:none;transform:none}}
+  @media print{.btnrow,.marking,#rail{display:none}}
 </style>
 </head>
 <body>
+<div class="marking"><span>Unclassified</span><span>Exercise material</span><span>Open sources only</span></div>
 <div class="wrap">
+  <div id="mast"></div>
+  <div id="rail"></div>
+  <main id="app"></main>
+  <footer>
+    <hr class="rule1">
+    <p id="foot"></p>
+  </footer>
+</div>
+<div class="marking foot"><span>Unclassified</span><span>Exercise material</span><span>Open sources only</span></div>
 
-<header class="front">
-  <div class="eyebrow">The Primacy Premium</div>
-  <h1>Committee Exercise</h1>
-  <p class="subtitle">Two sided conditional play on the pathways question, 2026 to 2035</p>
-  <div class="byline">Alyssa Agard</div>
-  <hr class="rule2 draw">
-</header>
+<div class="interstitial" id="handoff" role="dialog" aria-modal="true" aria-labelledby="handoff-title">
+  <div class="inner">
+    <div class="seal" id="handoff-title"></div>
+    <p id="handoff-text"></p>
+    <div class="btnrow" style="justify-content:center"><button class="btn primary" id="handoff-btn"></button></div>
+  </div>
+</div>
 
-<nav id="rail" aria-label="periods" hidden>
-  <div class="rail-track"></div>
-</nav>
+<script>/*__ENGINE__*/</script>
+<script>
+"use strict";
+const PAYLOAD = /*__PAYLOAD__*/null;
+const REF = /*__REFERENCE__*/null;
+const E = Engine, M = PAYLOAD.model, D = PAYLOAD.design, P = E.prepare(PAYLOAD);
+const US = "United States", CN = "China", EU = "NATO Europe", IP = "Indo-Pacific allies";
+const SEATS = D.seat_order;
+const COLOR = { [US]: "#31456e", [CN]: "#7d3644", [EU]: "#3f6257", [IP]: "#7a6231",
+                "Hedging middle powers": "#8d8089", "Rest of world": "#b9aeb5" };
+const LAST = D.periods.length - 1;
+let G = null;
 
-<!-- ============================ SETUP ============================ -->
-<section id="scr-setup" class="screen active">
-  <p>This exercise puts two committees on opposite sides of the pathways question. Each period, both
-  committees commit a stance sealed and simultaneously; the stances condition the forecast, they do not
-  script the outcome. Indicators publish on their real schedules, so each committee reads the world late
-  and partial, which is the condition the underlying research project is about. Play is not zero sum:
-  each committee is scored against its own objectives, its commitment expenditure, and the calibration
-  of the interval forecasts it states before each resolution.</p>
+/* ------------------------------------------------------------ helpers */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fix = (v, dp) => { const s = Number(v).toFixed(dp == null ? 1 : dp); return +s === 0 ? s.replace("-", "") : s; };
+const f = (v, dp) => fix(v, dp).replace("-", "\u2212");
+const sg = (v, dp) => (+fix(v, dp) > 0 ? "+" : "") + f(v, dp);
+const bn = (v) => (v / 1000).toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const sbn = (v, dp) => (v > 0 ? "+" : v < 0 ? "\u2212" : "") + (Math.abs(v) / 1000).toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp });
+const sw = (b) => `<span class="swatch" style="background:${COLOR[b]}"></span>`;
+const qx = (qi) => 2026.5 + qi * 0.25;
+const snap = (v) => Math.round(v / D.step) * D.step;
+const world = (lvl) => M.blocks.reduce((a, b) => a + lvl[b], 0);
+const alliedSum = (lvl) => lvl[EU] + lvl[IP];
+const coalition = (lvl) => D.coalition.reduce((a, b) => a + lvl[b], 0);
+const holder = (b) => !SEATS.includes(b) ? "model" : G.human[b] ? "committee" : "model";
+
+function period(k) {
+  const ys = D.periods[k].years, dy = ys[0] - 1;
+  return { k, ys, roman: D.periods[k].roman, decisionYear: dy, pubYear: dy - 1,
+           pubQ: E.qIndex(dy, 2), growthYear: ys[0], endYear: ys[ys.length - 1],
+           usdQ: k < LAST ? E.qIndex(ys[ys.length - 1], 2) : E.qIndex(D.horizon, 4) };
+}
+function growthOf(year, b) {
+  if (year <= M.base_year) return M.history.growth[b][M.history.years.indexOf(year)];
+  return G.recs[year].g[b];
+}
+function alliedGrowth(year) {
+  return 100 * (alliedSum(G.states[year].lvl) / alliedSum(G.states[year - 1].lvl) - 1);
+}
+
+/* --------------------------------------------------------------- game */
+function advance(commit) {
+  const res = E.step(P, G.W, G.states[G.year], commit);
+  G.year = res.state.year;
+  G.states[G.year] = res.state;
+  G.recs[G.year] = res.rec;
+  res.rec.quarters.forEach((k) => { G.q[k.qi] = { usd: k.usd, cny: k.cny }; });
+}
+
+function newGame(seed, human) {
+  const rng = E.Rng(seed);
+  G = { seed, human, year: M.base_year, states: {}, recs: {}, q: {}, k: 0, turn: 0,
+        sheets: [], scores: [], order: SEATS.filter((s) => human[s]) };
+  G.W = E.drawWorld(P, rng, { usModel: !human[US], cnModel: !human[CN] });
+  G.states[G.year] = E.initialState(P);
+  G.q[-1] = { usd: M.reserve.usd0, cny: M.reserve.cny0 };
+  advance({});                      // 2026 is resolved by the model for every seat
+  openSeat();
+}
+
+/* State at the last published year, reserves at the last published quarter. */
+function publishedState(pi) {
+  const s = E.copyState(G.states[pi.pubYear]), q = G.q[pi.pubQ];
+  const now = G.states[pi.decisionYear];
+  s.zU = q.usd; s.zC = E.logit(q.cny); s.q = pi.pubQ;
+  s.eventYear = now.eventYear; s.eventQ = now.eventQ;
+  return s;
+}
+
+function staffEstimate(seat, pi, draft) {
+  const fixed = {}, start = publishedState(pi);
+  fixed[pi.decisionYear] = { [seat]: G.recs[pi.decisionYear].g[seat] };
+  pi.ys.forEach((y) => {
+    fixed[y] = { [seat]: draft.g };
+    if (seat === CN && draft.event === y) fixed[y].event = true;
+  });
+  return E.estimate(P, {
+    seed: G.seed * 7919 + pi.k * 101 + SEATS.indexOf(seat) * 13 + 17,
+    n: D.staff_draws, start, fixed, endYear: pi.endYear, usdQ: pi.usdQ,
+    growthYear: pi.growthYear, usModel: seat !== US, cnModel: seat !== CN,
+    noEventThrough: start.eventYear ? 0 : pi.decisionYear });
+}
+
+function resolvePeriod() {
+  const pi = period(G.k), sheets = G.sheets[G.k];
+  pi.ys.forEach((y) => {
+    const c = {};
+    G.order.forEach((s) => { c[s] = sheets[s].g; });
+    if (G.human[CN] && sheets[CN].event === y) c.event = true;
+    advance(c);
+  });
+  const out = { usd: G.q[pi.usdQ].usd, grow: alliedGrowth(pi.growthYear) }, sc = {};
+  G.order.forEach((s) => {
+    const sh = sheets[s];
+    sc[s] = {
+      usd: E.winkler(sh.usd[0], sh.usd[1], out.usd, D.coverage),
+      grow: E.winkler(sh.grow[0], sh.grow[1], out.grow, D.coverage),
+      staffUsd: E.winkler(sh.staff.usd[0], sh.staff.usd[2], out.usd, D.coverage),
+      staffGrow: E.winkler(sh.staff.grow[0], sh.staff.grow[2], out.grow, D.coverage) };
+  });
+  G.scores[G.k] = { out, seats: sc };
+}
+
+/* ------------------------------------------------------------- chrome */
+function mast(front) {
+  $("mast").innerHTML = front
+    ? `<header class="front"><div class="series">The Primacy Premium</div>
+       <h1>Committee Exercise</h1>
+       <p class="subtitle">A four-seat budget exercise on the estimated model, 2026 to 2035</p>
+       <div class="byline">alyssa i. agard</div><hr class="rule2 draw"></header>`
+    : `<header class="compact"><span class="t">Committee Exercise</span>
+       <span class="series">The Primacy Premium</span></header>`;
+}
+function rail(state) {
+  if (!G) { $("rail").innerHTML = ""; return; }
+  $("rail").innerHTML = `<div class="rail-track">` + D.periods.map((p, i) => {
+    const cls = state === "debrief" || i < G.k || (state === "resolution" && i === G.k)
+      ? "done" : i === G.k ? "now" : "";
+    return `<div class="rail-seg ${cls}"><span class="rail-roman">${p.roman}</span>
+      <span class="rail-years">${p.years.join(" and ")}</span></div>`;
+  }).join("") + `</div>`;
+}
+function handoff(title, text, label, then) {
+  $("handoff-title").textContent = title;
+  $("handoff-text").textContent = text;
+  $("handoff-btn").textContent = label;
+  $("handoff").classList.add("active");
+  $("handoff-btn").onclick = () => { $("handoff").classList.remove("active"); then(); };
+  $("handoff-btn").focus();
+}
+function show(html, state) {
+  mast(state === "front");
+  rail(state);
+  $("app").innerHTML = html;
+  window.scrollTo(0, 0);
+}
+const hasPlotly = () => typeof Plotly !== "undefined";
+function plot(id, traces, layout) {
+  const el = $(id);
+  if (!el) return;
+  if (!hasPlotly()) {
+    el.innerHTML = `<p class="quiet">The chart library did not load. The tables carry the same figures.</p>`;
+    el.style.minHeight = "0";
+    return;
+  }
+  const base = {
+    font: { family: '"Times New Roman", Times, serif', size: 14, color: "#241d26" },
+    paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+    margin: { l: 56, r: 16, t: 14, b: 40 }, showlegend: true,
+    legend: { orientation: "h", y: -0.16, x: 0 }, hovermode: "x unified",
+    xaxis: { showgrid: false, linecolor: "#9c6f86", ticks: "outside", tickcolor: "#9c6f86", dtick: 2 },
+    yaxis: { gridcolor: "#ecdbe4", zeroline: false, linecolor: "#9c6f86" } };
+  Object.keys(layout || {}).forEach((k) => {
+    base[k] = typeof layout[k] === "object" && !Array.isArray(layout[k]) && base[k]
+      ? Object.assign({}, base[k], layout[k]) : layout[k];
+  });
+  if (el.clientWidth < 520) {        // narrow screens: fewer ticks, lower legend
+    delete base.xaxis.dtick;
+    Object.assign(base.xaxis, { nticks: 5, tickangle: 0 });
+    base.legend = Object.assign({}, base.legend, { y: -0.22 });
+    base.margin = Object.assign({}, base.margin, { l: 48 });
+  }
+  Plotly.react(el, traces, base, { displayModeBar: false, responsive: true });
+}
+
+/* -------------------------------------------------------------- front */
+const PRESETS = [
+  ["United States alone", [US]], ["China alone", [CN]], ["Both principals", [US, CN]],
+  ["Alliance table", [US, EU, IP]], ["All four seats", SEATS]];
+
+function front() {
+  G = null;
+  const src = M.source, fb = M.feedback;
+  show(`
+  <p class="measure">Four committees set real military expenditure for the United States, China, NATO Europe, and the Indo-Pacific allies over five periods to ${D.horizon}. Commitments are sealed and simultaneous. Any seat without a committee is run by the estimated model of <a href="${src.repository}">The Primacy Premium</a>, release ${esc(src.version)}, which also runs the hedging middle powers, the rest of the world, and the reserve currency shares. The exercise is a conditional forecasting instrument: it reports what the estimated model implies given the commitments made. It does not state that any path will occur.</p>
 
   <div class="panel alt">
-    <h3 class="sc" style="margin-top:0">Order of play</h3>
-    <ol class="playorder">
-      <li>Read the indicator board. Series publish on their real schedules, so parts of the record are provisional or not yet public.</li>
-      <li>Set a stance in each of five categories. The committee estimate redraws live as stances change: that morphing fan is the conditioning, made visible.</li>
-      <li>State an eighty percent interval for the war risk premium fixing. It is scored when the fixing publishes.</li>
-      <li>Commit sealed. The counterpart commits without seeing your sheet; in two committee play the device is passed under seal.</li>
-      <li>Resolution. Circulars issue, indicators tick to their new fixings, intervals score, and the pathway posterior updates. Five periods to 2035, then the debrief opens the sealed record.</li>
+    <h2 style="margin-top:0">Order of play</h2>
+    <ol class="steps">
+      <li>Read the published record. Expenditure for a year publishes the following April and reserve shares publish one quarter late, so each committee decides on data one to two years old for every seat but its own.</li>
+      <li>Commit one real growth rate for the period. The range is the 5th to 95th percentile of the seat's own annual growth, ${D.bound_rule.sample[0]} to ${D.bound_rule.sample[1]}.</li>
+      <li>State an ${Math.round(100 * D.coverage)} percent interval for the US dollar reserve share and for combined allied real growth. Both are scored when the figures publish.</li>
+      <li>Seal the commitment. With more than one committee, pass the device; no committee sees another's sheet.</li>
+      <li>Read the resolution. After period ${D.periods[LAST].roman} the debrief opens the sealed record: the parameters drawn for this exercise, every seat's path, and each commitment set against the model's equation for that seat.</li>
     </ol>
   </div>
 
   <h2>Convene the exercise</h2>
   <div class="panel">
-    <div class="grid2">
-      <div>
-        <h3>Mode</h3>
-        <label class="opt sel" data-grp="mode"><input type="radio" name="mode" value="hotseat" checked>
-          <span class="ol">Two committees, one device</span><br><span class="ob">Sealed handoffs between commitments.</span></label>
-        <label class="opt" data-grp="mode"><input type="radio" name="mode" value="solo_blue">
-          <span class="ol">Solo as the Blue committee</span><br><span class="ob">The Red committee plays to an archetype prior.</span></label>
-        <label class="opt" data-grp="mode"><input type="radio" name="mode" value="solo_red">
-          <span class="ol">Solo as the Red committee</span><br><span class="ob">The Blue committee plays a balanced program.</span></label>
-        <div id="arch-block">
-          <h3>Red archetype</h3>
-          <select id="archetype">
-            <option value="patient">Patient accretionist</option>
-            <option value="demonstrator">Opportunistic demonstrator</option>
-            <option value="constrained">Resource constrained consolidator</option>
-          </select>
-          <p class="quiet">A prior over Red stances, not a script. Applies to solo Blue play.</p>
-        </div>
-      </div>
-      <div>
-        <h3>World assumptions</h3>
-        <div id="world-menus"></div>
-        <p class="quiet">Two further world parameters, shock propensity and the Red macroeconomic
-        tailwind, are drawn sealed at the start and revealed only at the debrief.</p>
-        <h3>Exercise seed</h3>
-        <input type="text" id="seed" value="20260724" size="12" aria-label="exercise seed">
-        <p class="quiet">The same seed reproduces the same sealed draws, episode history, and
-        resolution path.</p>
-      </div>
-    </div>
-    <div class="btnrow"><button class="btn primary" id="btn-start">Convene</button></div>
-  </div>
-
-  <details><summary>Method in brief</summary><div id="methods-setup"></div></details>
-</section>
-
-<!-- ============================ COMMIT ============================ -->
-<section id="scr-commit" class="screen">
-  <div class="side-banner" id="commit-banner">
-    <span class="who" id="commit-who">Blue committee</span>
-    <span class="period-tag" id="commit-period">Move sheet, Period I</span>
-  </div>
-
-  <h2>Indicator board</h2>
-  <p class="quiet">Series publish on schedule. Provisional figures may be superseded; unpublished
-  periods are marked. The counterpart committee's stance is never shown.</p>
-  <div class="strip-scroll"><table id="indicator-table"></table></div>
-  <details><summary>Series notes</summary>
-    <table>
-      <tbody>
-      <tr><td class="sc">Blue military expenditure</td><td class="quiet">Real outlays, indexed to 2025. Appears provisional in period from budget announcements; finalized next period.</td></tr>
-      <tr><td class="sc">Red military expenditure</td><td class="quiet">Real outlays, indexed to 2025. Same provisional then final schedule.</td></tr>
-      <tr><td class="sc">European expenditure</td><td class="quiet">Central and Western European real outlays, indexed to 2025. Tracks follow through on the five percent commitment.</td></tr>
-      <tr><td class="sc">USD reserve share</td><td class="quiet">Percent of allocated foreign exchange reserves held in dollars. Publishes one period behind.</td></tr>
-      <tr><td class="sc">RMB reserve share</td><td class="quiet">Percent of allocated reserves held in renminbi. Publishes one period behind.</td></tr>
-      <tr><td class="sc">Additional war risk premium</td><td class="quiet">Percent of hull and machinery value for listed area transits. Fixes within the period; the scored series.</td></tr>
-      <tr><td class="sc">Red arms export share</td><td class="quiet">Percent of world major arms exports. Publishes one period behind.</td></tr>
-      <tr><td class="sc">Warhead ratio</td><td class="quiet">Red stockpile against Blue deployed strategic forces. The denominator is stochastic after treaty lapse. Publishes one period behind.</td></tr>
+    <div class="scroll"><table>
+      <thead><tr><th>Seat</th><th class="r">Outlays, ${M.base_year}</th><th class="r">Real growth, ${M.base_year}</th><th class="r">Ten-year rate</th><th>Held by</th></tr></thead>
+      <tbody>${SEATS.map((s, i) => `<tr>
+        <td>${sw(s)}${s}</td><td class="r">${bn(M.base[s])}</td>
+        <td class="r">${sg(growthOf(M.base_year, s))}</td>
+        <td class="r">${sg(D.seats[s].trend)}</td>
+        <td><label class="seatopt"><input type="radio" name="seat${i}" value="1"${i === 0 ? " checked" : ""}> Committee</label>
+            <label class="seatopt"><input type="radio" name="seat${i}" value="0"${i === 0 ? "" : " checked"}> Model</label></td></tr>`).join("")}
       </tbody>
-    </table>
+      <caption>Outlays in billions of constant 2024 US dollars; growth in percent. Source: SIPRI Military Expenditure Database, tier totals chain-linked over matched members. Ten-year rate is compound growth, ${M.rates.trend_window[0]} to ${M.rates.trend_window[1]}.</caption>
+    </table></div>
+    <div class="btnrow" style="margin:.9rem 0 .2rem">
+      ${PRESETS.map((p, i) => `<button class="btn small" data-preset="${i}">${p[0]}</button>`).join("")}
+    </div>
+    <p style="margin-top:1rem"><label for="seed">Exercise seed</label>
+      <input type="number" id="seed" value="${M.seed}" min="1" max="2147483647" step="1" style="width:9rem;margin-left:.5rem"></p>
+    <p class="quiet measure">The seed fixes the sealed record: the pathway drawn for seats run by the model, the coefficient draws, and the residual years. The same seed and the same commitments reproduce the same exercise.</p>
+    <p class="err" id="front-err" role="alert"></p>
+    <div class="btnrow"><button class="btn primary" id="convene">Convene the exercise</button></div>
+  </div>
+
+  <h2>Reference path</h2>
+  <div id="c-ref" class="chart"></div>
+  <p class="quiet measure">Observed outlays to ${M.base_year}, then the median of the accretion pathway with every seat run by the model (${REF.draws.toLocaleString("en-US")} draws). Objectives and debrief comparisons are stated against this reference. Billions of constant 2024 US dollars.</p>
+
+  <h2>What is estimated and what is assumed</h2>
+  <div class="grid2">
+    <div>
+      <h3>Estimated, from release ${esc(src.version)}</h3>
+      <ul class="plain">
+        <li>Allied response equations for three tiers, ${fb[EU].sample[0]} to ${fb[EU].sample[1]}, with coefficient covariance. NATO Europe: ${sg(fb[EU].mean[1], 3)} on lagged US growth (standard error ${f(fb[EU].se[1], 3)}), ${sg(fb[EU].mean[2], 3)} on lagged Chinese growth (${f(fb[EU].se[2], 3)}).</li>
+        <li>Reserve share response to the China to United States expenditure ratio: ${sg(M.reserve.usd.mean[1], 2)} points per unit log change (standard error ${f(M.reserve.usd.se[1], 2)}), R squared ${f(M.reserve.usd.r2, 3)}.</li>
+        <li>Residuals for six blocks, ${M.resid.years[0]} to ${M.resid.years[M.resid.years.length - 1]}, resampled by stationary bootstrap with a mean run of ${M.mean_run_years} years.</li>
+        <li>The 2022 episode: reserve share changes in two quarters, the later drift shift, and the change in allied growth.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Assumed by the exercise</h3>
+      <ul class="plain">
+        <li>A committee's rate is realized exactly. It replaces the model equation and its residual for that seat.</li>
+        <li>Seats run by the model draw one of three pathways with equal probability. The pathway is sealed until the debrief.</li>
+        <li>Objectives are stated against the median of the accretion pathway with every seat run by the model. They are stylized interests, not findings.</li>
+        <li>A demonstration repeats one episode. Committees holding allied seats choose their own response to it.</li>
+      </ul>
+    </div>
+  </div>
+
+  <details>
+    <summary>Method in brief</summary>
+    <p class="measure">The engine is the model's own recursion, run in the browser. With every seat run by the model it reproduces the published ${D.horizon} medians of release ${esc(src.version)} for all three pathways: the largest deviation across ${REF.parity.rows.length} medians is ${f(maxDev("%"), 2)} percent for expenditure levels and ${f(maxDev("pp"), 2)} points for shares, at ${REF.draws.toLocaleString("en-US")} draws. The difference is sampling error from a different random number generator.</p>
+    <p class="measure">In release ${esc(src.version)} the allied response hypothesis is ${esc(M.h2.verdict)} in the pooled test (one-sided p ${f(M.h2.p_one_sided, 2)}). Coefficient signs are therefore uncertain, and the sealed draws retain that uncertainty. The reserve response is weak. Committees should expect expenditure to respond to commitments far more than reserve shares do.</p>
+    <p class="measure">Interval statements are scored by the Winkler rule at ${Math.round(100 * D.coverage)} percent coverage: the width of the interval plus ${f(2 / (1 - D.coverage), 0)} times the distance by which the outcome falls outside it. Lower is better. Each committee's score is reported beside the score of the staff interval it was shown.</p>
+    <p class="measure">Full method: <a href="https://github.com/alyssaagard/primacy-committee-exercise/blob/main/METHOD.md">METHOD.md</a>. Model report: <a href="https://alyssaagard.github.io/primacy-premium/report.html">The Primacy Premium, report</a>.</p>
+  </details>`, "front");
+
+  const hy = M.history.years, ry = Object.keys(REF.year_medians).map(Number);
+  plot("c-ref", SEATS.flatMap((b) => [
+    { x: hy, y: M.history.levels[b].map((v) => v / 1000), mode: "lines", name: b, line: { color: COLOR[b], width: 2 } },
+    { x: [M.base_year].concat(ry), y: [M.base[b]].concat(ry.map((y) => REF.year_medians[y][b])).map((v) => v / 1000),
+      mode: "lines", showlegend: false, line: { color: COLOR[b], width: 1.4, dash: "dot" } }]),
+    { yaxis: { title: { text: "Billions, constant 2024 US dollars" }, rangemode: "tozero" }, xaxis: { dtick: 5 } });
+
+  document.querySelectorAll("[data-preset]").forEach((b) => {
+    b.onclick = () => {
+      const on = PRESETS[+b.dataset.preset][1];
+      SEATS.forEach((s, i) => {
+        document.querySelector(`input[name=seat${i}][value="${on.includes(s) ? 1 : 0}"]`).checked = true;
+      });
+    };
+  });
+  $("convene").onclick = () => {
+    const human = {};
+    SEATS.forEach((s, i) => { human[s] = document.querySelector(`input[name=seat${i}]:checked`).value === "1"; });
+    const seed = Math.floor(+$("seed").value);
+    if (!SEATS.some((s) => human[s])) { $("front-err").textContent = "Assign at least one seat to a committee."; return; }
+    if (!(seed >= 1 && seed <= 2147483647)) { $("front-err").textContent = "Enter a whole number seed between 1 and 2147483647."; return; }
+    newGame(seed, human);
+  };
+}
+function maxDev(unit) {
+  return REF.parity.rows.filter((r) => r.deviation.endsWith(unit))
+    .reduce((a, r) => Math.max(a, Math.abs(parseFloat(r.deviation))), 0);
+}
+
+/* --------------------------------------------------------- seat paper */
+function recordTable(year, own) {
+  const lvl = G.states[year].lvl, w = world(lvl);
+  return `<div class="scroll"><table>
+    <thead><tr><th>Block</th><th class="r">Outlays, ${year}</th><th class="r">Real growth, ${year}</th><th class="r">Share of world</th></tr></thead>
+    <tbody>${M.blocks.map((b) => `<tr${b === own ? ' class="own"' : ""}>
+      <td>${sw(b)}${b}<span class="tag">${b === own ? "this seat" : holder(b)}</span></td>
+      <td class="r">${bn(lvl[b])}</td><td class="r">${sg(growthOf(year, b))}</td>
+      <td class="r">${f(100 * lvl[b] / w)}</td></tr>`).join("")}
+      <tr class="total"><td>World</td><td class="r">${bn(w)}</td><td class="r"></td><td class="r">100.0</td></tr>
+    </tbody>
+    <caption>Billions of constant 2024 US dollars; growth and shares in percent. Rest of world includes Russia.</caption>
+  </table></div>`;
+}
+function circularHtml(s) {
+  if (!s.eventYear) return "";
+  return `<div class="circular"><div class="chead"><span>Circular, ${E.qLabel(s.eventQ)}</span><span>Demonstration recorded</span></div>
+    <p>A demonstration is recorded in ${s.eventYear}. Reserve shares move by the changes observed in 2022-Q1 and 2022-Q2 and drift shifts afterwards. Allied tiers run by the model add their measured post-2022 change in growth, declining to zero over ${M.decay_years} years. The war risk premium multiple recorded for the 2022 episode is ${f(M.war_risk_multiple, 1)}.</p></div>`;
+}
+
+function openSeat() {
+  const seat = G.order[G.turn], pi = period(G.k), sd = D.seats[seat];
+  const pub = G.states[pi.pubYear], now = G.states[pi.decisionYear];
+  const fb = M.feedback[seat];
+  const refs = sd.refs.slice();
+  if (fb) {
+    refs.unshift(["Model equation", Math.min(sd.bounds[1], Math.max(sd.bounds[0],
+      fb.mean[0] + fb.mean[1] * growthOf(pi.pubYear, US) + fb.mean[2] * growthOf(pi.pubYear, CN)))]);
+  }
+  const prior = G.k > 0 ? G.sheets[G.k - 1][seat].g : snap(sd.trend);
+  const draft = { g: Math.min(sd.bounds[1], Math.max(sd.bounds[0], prior)), event: 0,
+                  autoUsd: true, autoGrow: true, usd: [0, 0], grow: [0, 0], est: null };
+  const window_ = seat === CN && !now.eventYear
+    ? pi.ys.filter((y) => y >= M.event_years[0] && y <= M.event_years[1]) : [];
+  const q = G.q[pi.pubQ], many = G.order.length > 1;
+  const tq = E.qLabel(pi.usdQ);
+
+  show(`
+  <div class="banner"><span class="who" style="color:${COLOR[seat]}">${seat} committee</span>
+    <span class="when">Period ${pi.roman}, ${pi.ys.join(" and ")}. Decision point November ${pi.decisionYear}</span></div>
+
+  <section class="para"><span class="n">1.</span><div>
+    <h2>Published record</h2>
+    ${recordTable(pi.pubYear, seat)}
+    <p class="measure">Expenditure for ${pi.decisionYear} publishes in April ${pi.decisionYear + 1}. Ratios for ${pi.pubYear}: China to United States ${f(pub.lvl[CN] / pub.lvl[US], 3)}; coalition to China ${f(coalition(pub.lvl) / pub.lvl[CN], 2)}. Reserves at ${E.qLabel(pi.pubQ)}: US dollar ${f(q.usd, 2)} percent and renminbi ${f(q.cny, 2)} percent of allocated reserves.</p>
+    ${circularHtml(now) || `<p class="quiet">No demonstration is recorded.</p>`}
+  </div></section>
+
+  <section class="para"><span class="n">2.</span><div>
+    <h2>Own program</h2>
+    <p class="measure">Outlays in ${pi.decisionYear}: ${bn(now.lvl[seat])} billion, real growth ${sg(growthOf(pi.decisionYear, seat))} percent${G.k === 0 ? ", as resolved by the model for the year in progress" : ", as committed in period " + D.periods[G.k - 1].roman}. This figure is known to this committee and is not yet published.</p>
+  </div></section>
+
+  <div class="grid2 seatgrid">
+  <section class="para"><span class="n">3.</span><div>
+    <h2>Commitment</h2>
+    <div class="panel sheet" style="margin-top:.4rem">
+      <label for="g" class="quiet">Real growth per year, ${pi.ys.join(" and ")}</label>
+      <div class="rate"><span class="v" id="gv"></span><span class="u">percent</span></div>
+      <input type="range" id="g" min="${sd.bounds[0]}" max="${sd.bounds[1]}" step="${D.step}" value="${draft.g}">
+      <div class="scale"><span>${sg(sd.bounds[0])}</span><span>observed range, ${D.bound_rule.sample[0]} to ${D.bound_rule.sample[1]}</span><span>${sg(sd.bounds[1])}</span></div>
+      <div class="btnrow" style="margin:.8rem 0 .4rem">
+        ${refs.map((r) => `<button class="btn small" data-ref="${snap(r[1])}">${r[0]}, ${sg(r[1])}</button>`).join("")}
+      </div>
+      <div id="outlays"></div>
+      ${window_.length ? `<p style="margin-top:.9rem"><label for="event">Demonstration</label>
+        <select id="event" style="margin-left:.5rem"><option value="0">None this period</option>
+        ${window_.map((y) => `<option value="${y}">In ${y}</option>`).join("")}</select></p>
+        <p class="quiet">One demonstration is available to this seat between ${M.event_years[0]} and ${M.event_years[1]}. It repeats the measured 2022 episode and carries no score of its own.</p>` : ""}
+    </div>
+  </div></section>
+
+  <section class="para"><span class="n">4.</span><div>
+    <h2>Staff estimate and stated intervals</h2>
+    <div id="fan" class="chart"></div>
+    <div class="scroll"><table>
+      <thead><tr><th>Quantity</th><th class="r nw">Staff range</th><th class="r">Lower</th><th class="r">Upper</th></tr></thead>
+      <tbody>
+        <tr><td><label for="u0">US dollar reserve share, ${tq}, percent</label></td><td class="r nw" id="su"></td>
+          <td class="r"><input class="iv" type="number" step="0.1" id="u0" aria-label="US dollar share, lower bound"></td>
+          <td class="r"><input class="iv" type="number" step="0.1" id="u1" aria-label="US dollar share, upper bound"></td></tr>
+        <tr><td><label for="a0">Combined real growth, NATO Europe and Indo-Pacific allies, ${pi.growthYear}, percent</label></td><td class="r nw" id="sa"></td>
+          <td class="r"><input class="iv" type="number" step="0.1" id="a0" aria-label="Allied growth, lower bound"></td>
+          <td class="r"><input class="iv" type="number" step="0.1" id="a1" aria-label="Allied growth, upper bound"></td></tr>
+        <tr><td>China to United States ratio, ${pi.endYear}</td><td class="r nw" id="sr"></td><td></td><td></td></tr>
+      </tbody>
+      <caption>Staff range is the 10th to 90th percentile of ${D.staff_draws} draws of the model from the published record, given this commitment. Every other seat is taken at its model equation, with the three pathways at equal probability. The staff cannot see the sealed record or another committee's sheet.</caption>
+    </table></div>
+  </div></section>
+  </div>
+
+  <p class="err" id="seat-err" role="alert"></p>
+  <div class="btnrow"><button class="btn primary" id="commit">Seal the commitment</button>
+    <span class="quiet">${many ? `Seat ${G.turn + 1} of ${G.order.length} this period.` : ""}</span></div>`, "seat");
+
+  const hist = M.reserve.history, hx = [], hy = [];
+  hist.quarters.forEach((s, i) => {
+    const x = +s.slice(0, 4) + (+s.slice(6) - 1) / 4;
+    if (x >= 2019) { hx.push(x); hy.push(hist.usd[i]); }
+  });
+  for (let qi = 0; qi <= pi.pubQ; qi++) { hx.push(qx(qi)); hy.push(G.q[qi].usd); }
+
+  function refresh() {
+    draft.est = staffEstimate(seat, pi, draft);
+    const e = draft.est;
+    $("gv").textContent = sg(draft.g);
+    let lv = now.lvl[seat];
+    $("outlays").innerHTML = `<table><thead><tr><th>Year</th><th class="r">Outlays</th><th class="r">Change from ${pi.decisionYear}</th></tr></thead><tbody>` +
+      pi.ys.map((y) => { lv *= 1 + draft.g / 100;
+        return `<tr><td>${y}</td><td class="r">${bn(lv)}</td><td class="r">${sbn(lv - now.lvl[seat], 1)}</td></tr>`; }).join("") +
+      `</tbody><caption>Billions of constant 2024 US dollars.</caption></table>`;
+    $("su").textContent = `${f(e.usd[0], 1)} to ${f(e.usd[2], 1)}`;
+    $("sa").textContent = `${sg(e.growth[0], 1)} to ${sg(e.growth[2], 1)}`;
+    $("sr").textContent = `${f(e.ratio[0], 3)} to ${f(e.ratio[2], 3)}`;
+    if (draft.autoUsd) { $("u0").value = e.usd[0].toFixed(1); $("u1").value = e.usd[2].toFixed(1); }
+    if (draft.autoGrow) { $("a0").value = e.growth[0].toFixed(1); $("a1").value = e.growth[2].toFixed(1); }
+    chart();
+  }
+  function chart() {
+    const e = draft.est, fx = [hx[hx.length - 1]], lo = [hy[hy.length - 1]], md = lo.slice(), hi = lo.slice();
+    e.fan.forEach((k) => { fx.push(qx(k.qi)); lo.push(k.p10); md.push(k.p50); hi.push(k.p90); });
+    const u0 = +$("u0").value, u1 = +$("u1").value, tx = qx(pi.usdQ);
+    plot("fan", [
+      { x: hx, y: hy, mode: "lines", name: "Published", line: { color: "#241d26", width: 1.6 } },
+      { x: fx, y: hi, mode: "lines", line: { width: 0 }, showlegend: false, hoverinfo: "skip" },
+      { x: fx, y: lo, mode: "lines", line: { width: 0 }, fill: "tonexty", fillcolor: "rgba(156,111,134,.22)", name: "Staff, 10th to 90th" },
+      { x: fx, y: md, mode: "lines", name: "Staff median", line: { color: "#8a5a72", width: 1.6, dash: "dot" } },
+      { x: [tx, tx], y: [u0, u1], mode: "lines+markers", name: "Stated interval",
+        line: { color: COLOR[seat], width: 3 }, marker: { symbol: "line-ew", size: 12, line: { width: 3, color: COLOR[seat] } } }
+    ], { yaxis: { title: { text: "US dollar share, percent" } }, xaxis: { dtick: 1 } });
+  }
+  $("g").oninput = () => { draft.g = +$("g").value; refresh(); };
+  document.querySelectorAll("[data-ref]").forEach((b) => {
+    b.onclick = () => { draft.g = +b.dataset.ref; $("g").value = draft.g; refresh(); };
+  });
+  if ($("event")) $("event").onchange = () => { draft.event = +$("event").value; refresh(); };
+  ["u0", "u1"].forEach((id) => { $(id).oninput = () => { draft.autoUsd = false; chart(); }; });
+  ["a0", "a1"].forEach((id) => { $(id).oninput = () => { draft.autoGrow = false; }; });
+  refresh();
+
+  $("commit").onclick = () => {
+    const v = ["u0", "u1", "a0", "a1"].map((id) => parseFloat($(id).value));
+    if (v.some((x) => !isFinite(x))) { $("seat-err").textContent = "Enter a number in each interval bound."; return; }
+    if (v[0] > v[1] || v[2] > v[3]) { $("seat-err").textContent = "Each lower bound must not exceed its upper bound."; return; }
+    G.sheets[G.k] = G.sheets[G.k] || {};
+    G.sheets[G.k][seat] = { g: draft.g, event: draft.event, usd: [v[0], v[1]], grow: [v[2], v[3]],
+                            staff: { usd: draft.est.usd, grow: draft.est.growth } };
+    G.turn += 1;
+    const after = () => {
+      if (G.turn < G.order.length) { openSeat(); return; }
+      resolvePeriod();
+      if (G.k === LAST) debrief(); else resolution();
+    };
+    if (!many) { after(); return; }
+    $("app").innerHTML = "";
+    if (G.turn < G.order.length) {
+      handoff("Commitment sealed", `Pass the device to the ${G.order[G.turn]} committee.`,
+              `Open the ${G.order[G.turn]} paper`, after);
+    } else {
+      handoff("All commitments sealed", `Period ${pi.roman} resolves. The resolution is public to every committee.`,
+              "Read the resolution", after);
+    }
+  };
+}
+
+/* ----------------------------------------------------------- scoring */
+function scoreRows(k) {
+  const pi = period(k), sc = G.scores[k], sheets = G.sheets[k];
+  const row = (seat, label, iv, st, out, w, sw_, dp, signed) => {
+    const fm = signed ? sg : f;
+    return `<tr><td>${sw(seat)}${seat}</td><td>${label}</td>
+      <td class="r">${fm(iv[0], dp)} to ${fm(iv[1], dp)}</td><td class="r">${fm(out, dp)}</td>
+      <td class="r ${w.hit ? "ok" : "miss"}">${w.hit ? "inside" : "outside by " + f(w.miss, dp)}</td>
+      <td class="r">${f(w.score, 1)}</td><td class="r">${f(sw_.score, 1)}</td></tr>`;
+  };
+  return G.order.map((s) =>
+    row(s, `US dollar share, ${E.qLabel(pi.usdQ)}`, sheets[s].usd, sheets[s].staff.usd, sc.out.usd, sc.seats[s].usd, sc.seats[s].staffUsd, 2, false) +
+    row(s, `Allied real growth, ${pi.growthYear}`, sheets[s].grow, sheets[s].staff.grow, sc.out.grow, sc.seats[s].grow, sc.seats[s].staffGrow, 1, true)).join("");
+}
+const SCORE_HEAD = `<thead><tr><th>Committee</th><th>Quantity</th><th class="r">Stated interval</th><th class="r">Outcome</th><th class="r">Result</th><th class="r">Score</th><th class="r">Staff score</th></tr></thead>`;
+
+function pathwayNote(throughYear) {
+  const recs = [];
+  for (let y = D.start_year; y <= throughYear; y++) recs.push(G.recs[y]);
+  const ev = G.states[Math.min(G.year, throughYear + 1)].eventYear;
+  const mean = recs.reduce((a, r) => a + r.g[US], 0) / recs.length;
+  const cls = E.classify(P, recs, ev);
+  return `Mean US real growth, ${D.start_year} to ${throughYear}: ${sg(mean, 2)} percent per year. ${ev ? "A demonstration is recorded in " + ev + "." : "No demonstration is recorded."} The record to date is classed as ${cls}. The dividing line between accretion and retrenchment is ${sg(D.us_midpoint, 2)} percent, the midpoint of the two pathway rates.`;
+}
+
+/* --------------------------------------------------------- resolution */
+function resolution() {
+  const pi = period(G.k), nxt = period(G.k + 1);
+  const pubQ = G.q[nxt.pubQ], sNow = G.states[nxt.decisionYear];
+  const newEvent = sNow.eventYear && sNow.eventYear > pi.decisionYear;
+  show(`
+  <div class="banner"><span class="who">Resolution, period ${pi.roman}</span>
+    <span class="when">Record as of November ${nxt.decisionYear}</span></div>
+  ${newEvent ? circularHtml(sNow) : `<p class="quiet">No circular issued this period.</p>`}
+
+  <h2>Newly published</h2>
+  ${recordTable(nxt.pubYear, null)}
+  <p class="measure">Commitments for ${nxt.pubYear} are now public. Expenditure for ${nxt.decisionYear} publishes in April ${nxt.decisionYear + 1}. Reserves at ${E.qLabel(nxt.pubQ)}: US dollar ${f(pubQ.usd, 2)} percent and renminbi ${f(pubQ.cny, 2)} percent of allocated reserves.</p>
+
+  <h2>Interval statements</h2>
+  <div class="scroll"><table>${SCORE_HEAD}<tbody>${scoreRows(G.k)}</tbody>
+    <caption>Winkler score at ${Math.round(100 * D.coverage)} percent coverage: interval width plus ${f(2 / (1 - D.coverage), 0)} times any distance outside. Lower is better. The staff score is for the interval the committee was shown.</caption></table></div>
+
+  <h2>Pathway record</h2>
+  <p class="measure">${pathwayNote(nxt.pubYear)}</p>
+  <div class="btnrow"><button class="btn primary" id="next">Open period ${nxt.roman}</button></div>`, "resolution");
+  $("next").onclick = () => {
+    G.k += 1; G.turn = 0;
+    if (G.order.length > 1) {
+      $("app").innerHTML = "";
+      handoff(`Period ${nxt.roman}`, `Pass the device to the ${G.order[0]} committee.`, `Open the ${G.order[0]} paper`, openSeat);
+    } else openSeat();
+  };
+}
+
+/* ------------------------------------------------------------ debrief */
+function pctl(key, v) {
+  const p = E.percentileOf(REF.dist[key], REF.probs, v);
+  return p <= 5 ? "below 5th" : p >= 95 ? "above 95th" : f(p, 0);
+}
+const refMed = (key) => REF.dist[key][REF.probs.indexOf(0.5)];
+
+function debrief() {
+  const years = [], recs = [];
+  for (let y = D.start_year; y <= D.horizon; y++) { years.push(y); recs.push(G.recs[y]); }
+  const end = G.states[D.horizon], cum = {};
+  SEATS.forEach((s) => { cum[s] = years.reduce((a, y) => a + G.states[y].lvl[s], 0); });
+  const meas = E.measures(P, end, cum), W = G.W;
+  const cls = E.classify(P, recs, end.eventYear);
+  const MEAS = [["cn_us", "China to United States expenditure ratio", 3, ""],
+    ["coalition_cn", "Coalition to China expenditure ratio", 2, ""],
+    ["us_share_coalition", "United States share of coalition expenditure", 1, "percent"],
+    ["allied_share", "NATO Europe and Indo-Pacific allies, share of world", 1, "percent"],
+    ["usd", "US dollar reserve share, " + D.horizon + "-Q4", 2, "percent"],
+    ["cny", "Renminbi reserve share, " + D.horizon + "-Q4", 2, "percent"]];
+
+  const sealed = [];
+  sealed.push(G.human[US] ? "The United States was held by a committee, so no pathway rate was applied to it."
+    : `The United States was run at the ${W.usPath === "retrenchment" ? "retrenchment rate, " + sg(M.rates.us_contraction, 2) : "ten-year rate, " + sg(M.rates.us_trend, 2)} percent per year, plus residuals.`);
+  sealed.push(G.human[CN] ? (end.eventYear ? `The China committee declared a demonstration in ${end.eventYear}; it fell in ${E.qLabel(end.eventQ)}.` : "The China committee declared no demonstration.")
+    : (end.eventYear ? `The sealed pathway placed a demonstration in ${end.eventYear}; it fell in ${E.qLabel(end.eventQ)}.` : "The sealed pathway contained no demonstration."));
+
+  const objectives = G.order.map((s) => {
+    const rows = D.seats[s].objectives.map((o) => {
+      const v = meas[o.measure], r = refMed(o.measure), met = o.op === ">=" ? v >= r : v <= r;
+      const dp = MEAS.find((m) => m[0] === o.measure)[2];
+      return `<tr><td>${o.label}</td><td class="r">${f(v, dp)}</td><td class="r">${f(r, dp)}</td><td class="r ${met ? "ok" : "miss"}">${met ? "met" : "not met"}</td></tr>`;
+    }).join("");
+    const c = cum[s], cr = refMed("cum:" + s);
+    let n = 0, hit = 0, sc = 0, st = 0;
+    G.scores.forEach((k) => ["usd", "grow"].forEach((q) => {
+      n += 1; hit += k.seats[s][q].hit ? 1 : 0; sc += k.seats[s][q].score;
+      st += k.seats[s][q === "usd" ? "staffUsd" : "staffGrow"].score; }));
+    return `<h3 style="color:${COLOR[s]}">${s} committee</h3>
+      <div class="scroll"><table><thead><tr><th>Objective</th><th class="r">Outcome</th><th class="r">Reference median</th><th class="r">Result</th></tr></thead><tbody>${rows}
+      <tr><td>Cumulative outlays, ${D.start_year} to ${D.horizon}, billions</td><td class="r">${bn(c)}</td><td class="r">${bn(cr)}</td><td class="r">${sbn(c - cr, 1)} (${sg(100 * (c / cr - 1), 1)} percent)</td></tr>
+      <tr><td>Interval statements inside, of ${n}</td><td class="r">${hit}</td><td class="r">${f(n * D.coverage, 1)} expected</td><td class="r">mean score ${f(sc / n, 1)}; staff ${f(st / n, 1)}</td></tr>
+      </tbody></table></div>`;
+  }).join("");
+
+  const elicit = G.order.map((s) => {
+    const rows = years.filter((y) => y > D.start_year).map((y) => {
+      const r = G.recs[y], dev = r.g[s] - r.model[s].fitted;
+      return `<tr><td>${y}</td><td class="r">${sg(r.lagUS)}</td><td class="r">${sg(r.lagCN)}</td>
+        <td class="r">${sg(r.g[s])}</td><td class="r">${sg(r.model[s].fitted)}</td><td class="r">${sg(dev)}</td>
+        <td class="r">${f(E.residualPercentile(P, s, dev), 0)}</td><td class="r">${sg(r.model[s].sealed)}</td></tr>`;
+    }).join("");
+    return `<h3 style="color:${COLOR[s]}">${s} committee</h3>
+      <div class="scroll"><table><thead><tr><th>Year</th><th class="r">US growth, prior year</th><th class="r">China growth, prior year</th><th class="r">Committed</th><th class="r">Model equation</th><th class="r">Deviation</th><th class="r">Percentile</th><th class="r">Sealed model value</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }).join("");
+
+  const crow = (eq, on, est, se, draw, r2, tag) => `<tr><td>${eq}<span class="tag">${tag}</span></td><td>${on}</td>
+    <td class="r">${sg(est, 3)} (${f(se, 3)})</td><td class="r">${sg(draw, 3)}</td><td class="r">${f(r2, 3)}</td></tr>`;
+  const coefRows = M.allied.map((t) => {
+    const fb = M.feedback[t], c = W.coef[t];
+    return crow(sw(t) + t, "US real growth, prior year", fb.mean[1], fb.se[1], c[1], fb.r2, holder(t)) +
+           crow(sw(t) + t, "China real growth, prior year", fb.mean[2], fb.se[2], c[2], fb.r2, holder(t));
+  }).join("") +
+    crow("US dollar reserve share, points", "Log change, China to US ratio", M.reserve.usd.mean[1], M.reserve.usd.se[1], W.usd[1], M.reserve.usd.r2, "model") +
+    crow("Renminbi reserve share, log-odds", "Log change, China to US ratio", M.reserve.cny.mean[1], M.reserve.cny.se[1], W.cny[1], M.reserve.cny.r2, "model");
+
+  show(`
+  <div class="banner"><span class="who">Debrief</span><span class="when">The sealed record, ${D.start_year} to ${D.horizon}. Seed ${G.seed}</span></div>
+  <p class="measure">The record is classed as ${cls}. ${sealed.join(" ")}</p>
+  ${circularHtml(end)}
+
+  <h2>Expenditure</h2>
+  <div id="c-exp" class="chart tall"></div>
+  <p class="quiet measure">Solid lines are this exercise. Dotted lines are the reference: the median of the accretion pathway with every seat run by the model, ${REF.draws.toLocaleString("en-US")} draws.</p>
+
+  <h2>Reserve shares</h2>
+  <div id="c-res" class="chart"></div>
+
+  <h2>Position at ${D.horizon}</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Measure</th><th class="r">Outcome</th><th class="r">Reference median</th><th class="r">Percentile in reference</th></tr></thead>
+    <tbody>${MEAS.map((m) => `<tr><td>${m[1]}${m[3] ? ", " + m[3] : ""}</td><td class="r">${f(meas[m[0]], m[2])}</td><td class="r">${f(refMed(m[0]), m[2])}</td><td class="r">${pctl(m[0], meas[m[0]])}</td></tr>`).join("")}</tbody>
+    <caption>The coalition is the United States, NATO Europe, and the Indo-Pacific allies. Percentile is the position of the outcome in the reference distribution.</caption>
+  </table></div>
+
+  <h2>Committees</h2>
+  <p class="measure">The exercise names no winner. Each committee is reported on three separate axes: its stated objectives, what it spent, and the calibration of its interval statements. The objectives are design assumptions.</p>
+  ${objectives}
+
+  <details>
+    <summary>Interval statements, all periods</summary>
+    <div class="scroll"><table>${SCORE_HEAD}<tbody>${G.scores.map((_, k) => scoreRows(k)).join("")}</tbody></table></div>
   </details>
 
-  <h2>Committee estimate</h2>
-  <p class="quiet">Conditional fan under this committee's stance held forward, with the counterpart
-  and sealed world parameters at reference values. The fan is produced by the fitted emulator;
-  held out error is reported in the appendix.</p>
-  <div class="fanctl">
-    <label class="sc" for="commit-chan">series</label>
-    <select id="commit-chan"></select>
-  </div>
-  <div id="commit-fan" class="chart"></div>
+  <h2>Commitments against the model</h2>
+  <p class="measure">Each commitment is set against the value of the model equation for that seat at the growth rates realized in the prior year, using the published point estimates. For the two principals the equation is the ten-year rate. Percentile is the share of the seat's historical residuals, ${M.resid.years[0]} to ${M.resid.years[M.resid.years.length - 1]}, that lie below the deviation. The last column is the value the model would have drawn for the seat in this sealed record.</p>
+  ${elicit}
 
-  <h2>Move sheet</h2>
-  <div id="move-menus"></div>
+  <h2>Sealed coefficients</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Equation</th><th>Coefficient on</th><th class="r">Estimate</th><th class="r">Sealed draw</th><th class="r">R squared</th></tr></thead>
+    <tbody>${coefRows}</tbody>
+    <caption>Standard errors in parentheses. Estimates from The Primacy Premium, release ${esc(M.source.version)}. Each sealed draw is one draw from the joint normal distribution of the estimate. A seat held by a committee does not use its equation.</caption>
+  </table></div>
 
-  <h2>Stated interval</h2>
-  <div class="panel alt">
-    <p>State an eighty percent interval for the additional war risk premium at this period's
-    resolution, in percent of hull and machinery value. The interval is scored when the fixing
-    publishes.</p>
-    <label>lower <input type="number" id="int-lo" step="0.01" min="0" style="width:6.5rem"></label>
-    &nbsp;&nbsp;
-    <label>upper <input type="number" id="int-hi" step="0.01" min="0" style="width:6.5rem"></label>
-    <span class="quiet" id="int-hint"></span>
-  </div>
+  <div class="btnrow"><button class="btn primary" id="save">Download the record</button>
+    <button class="btn" id="again">Convene again</button></div>`, "debrief");
 
-  <div class="btnrow">
-    <button class="btn primary" id="btn-commit">Commit sealed</button>
-    <span class="quiet" id="commit-cost"></span>
-  </div>
-</section>
-
-<!-- ============================ RESOLVE ============================ -->
-<section id="scr-resolve" class="screen">
-  <div class="side-banner">
-    <span class="who">Resolution</span>
-    <span class="period-tag" id="resolve-period">Period I</span>
-  </div>
-  <p class="skipnote">proceed at any time; the sequence completes instantly</p>
-
-  <div id="circulars"></div>
-
-  <h2>Published this period</h2>
-  <div class="strip-scroll"><table id="resolve-table"></table></div>
-
-  <h2>Reference estimate and published path</h2>
-  <p class="quiet">The reference fan conditions all stances at reference values; it is the shared
-  staff estimate, deliberately uninformed by either committee's sealed stance. Published values
-  overlay in ink.</p>
-  <div class="fanctl">
-    <label class="sc" for="resolve-chan">series</label>
-    <select id="resolve-chan"></select>
-  </div>
-  <div id="resolve-fan" class="chart"></div>
-
-  <div class="grid2">
-    <div>
-      <h2>Interval scoring</h2>
-      <table id="interval-table"></table>
-      <p class="quiet">Winkler interval score at eighty percent nominal coverage; lower is better.
-      Width is paid always; misses are penalized at ten times the exceedance.</p>
-    </div>
-    <div>
-      <h2>Pathway posterior</h2>
-      <div id="posterior-chart" class="chart small"></div>
-      <p id="leader-note" class="leader-note" aria-live="polite"></p>
-      <p class="quiet">Classifier over conditioning trajectories, evaluated on committed stances and
-      the episode record, sealed parameters at reference until the debrief.</p>
-    </div>
-  </div>
-
-  <div class="btnrow">
-    <button class="btn primary" id="btn-next">Proceed</button>
-  </div>
-</section>
-
-<!-- ============================ DEBRIEF ============================ -->
-<section id="scr-debrief" class="screen">
-  <div class="side-banner">
-    <span class="who">Debrief</span>
-    <span class="period-tag">Horizon closed, 2035</span>
-  </div>
-
-  <div class="grid2">
-    <div class="panel"><h3 class="sc" style="color:var(--blue)">Blue committee</h3><div id="score-blue"></div></div>
-    <div class="panel"><h3 class="sc" style="color:var(--red)">Red committee</h3><div id="score-red"></div></div>
-  </div>
-  <p class="quiet">Scoring is not zero sum by design. The project's central claim is that the pathway,
-  not the endpoint, carries the variance; two committees can both attain their conditions along one
-  pathway and both fail along another.</p>
-
-  <h2>Realized path against the joint conditional fan</h2>
-  <p class="quiet">The debrief fan conditions on the true joint stance record and the revealed sealed
-  parameters. Divergence between this fan and the in period committee estimates is the measured cost
-  of the fog.</p>
-  <div class="fanctl">
-    <label class="sc" for="debrief-chan">series</label>
-    <select id="debrief-chan"></select>
-  </div>
-  <div id="debrief-fan" class="chart"></div>
-
-  <div class="grid2">
-    <div>
-      <h2>Pathway posterior, full record</h2>
-      <div id="debrief-posterior" class="chart small"></div>
-      <div id="pathway-verdict"></div>
-    </div>
-    <div>
-      <h2>Sealed world parameters</h2>
-      <div id="sealed-reveal"></div>
-      <h2>Move record</h2>
-      <div class="strip-scroll"><table id="move-record"></table></div>
-    </div>
-  </div>
-
-  <details open><summary>Method and emulator error</summary><div id="methods-debrief"></div></details>
-
-  <div class="btnrow"><button class="btn" id="btn-restart">Convene again</button></div>
-</section>
-
-<!-- ============================ INTERSTITIAL ============================ -->
-<div class="interstitial" id="handoff" role="dialog" aria-modal="true">
-  <div class="inner">
-    <div class="seal">Sealed</div>
-    <p id="handoff-text">Pass the device to the Red committee.</p>
-    <button class="btn primary" id="btn-handoff">Continue</button>
-  </div>
-</div>
-
-<div class="seal-stamp" id="seal"><div class="ring">sealed</div></div>
-
-<footer>
-  <hr class="rule2">
-  <p>The Primacy Premium: Committee Exercise. A conditional forecasting exercise; stances condition
-  the forecast and do not script the outcome. Build seed 20260724. Emulator and generative constants
-  are documented in the payload and regenerated by <span class="mono">build_data.py</span>.
-  Raw SIPRI and IMF files are excluded from the repository under publisher terms; calibration anchors
-  are documented in the build script.</p>
-  <p>License <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>.
-  <span class="sc">Alyssa Agard</span>.</p>
-</footer>
-
-</div>
-
-<script id="engine">
-"use strict";
-const P = /*__PAYLOAD__*/null;
-
-/* ---------- rng ---------- */
-function xmur3(str){let h=1779033703^str.length;for(let i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19;}return function(){h=Math.imul(h^(h>>>16),2246822507);h=Math.imul(h^(h>>>13),3266489909);return (h^=h>>>16)>>>0;};}
-function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};}
-function rngFor(tag){return mulberry32(xmur3(GAME.seed+"|"+tag)());}
-function gauss(r){let u=0;while(u===0)u=r();const v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
-
-/* ---------- motion utilities ---------- */
-const REDUCED=(typeof window!=="undefined"&&window.matchMedia
-  &&window.matchMedia("(prefers-reduced-motion: reduce)").matches)||false;
-let SKIP=false;const PENDING=new Set();
-function pause(ms){return new Promise(res=>{
-  if(REDUCED||SKIP){res();return;}
-  const id=setTimeout(()=>{PENDING.delete(fin);res();},ms);
-  const fin=()=>{clearTimeout(id);res();};PENDING.add(fin);});}
-function skipAll(){SKIP=true;PENDING.forEach(f=>f());PENDING.clear();}
-function tick(el,from,to,dp,dur){
-  if(REDUCED||SKIP||!window.requestAnimationFrame){el.textContent=Number(to).toFixed(dp);return;}
-  const t0=performance.now();el.classList.add("live");
-  function step(t){
-    if(SKIP){el.textContent=Number(to).toFixed(dp);el.classList.remove("live");return;}
-    const p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,3);
-    el.textContent=(from+(to-from)*e).toFixed(dp);
-    if(p<1)requestAnimationFrame(step);else el.classList.remove("live");}
-  requestAnimationFrame(step);}
-function stagger(nodes,step){nodes.forEach((n,i)=>{n.classList.add("reveal");
-  if(REDUCED||SKIP){n.classList.add("show");return;}
-  setTimeout(()=>n.classList.add("show"),60+i*step);});}
-
-/* ---------- payload handles ---------- */
-const CN=P.consts, KEYS=P.emulator.param_order, NP=KEYS.length;
-const PARAM={}; P.params.forEach(p=>PARAM[p.key]=p);
-const CH=P.channels, CHKEY=CH.map(c=>c.key), NCH=CH.length, T=P.epochs.length;
-const ROMAN=["I","II","III","IV","V"];
-const EPOCH_END=[2027,2029,2031,2033,2035];
-const IX={}; KEYS.forEach((k,i)=>IX[k]=i);
-const CHIX={}; CHKEY.forEach((k,i)=>CHIX[k]=i);
-
-/* ---------- emulator ---------- */
-function feat(x){ // x: raw values in param order
-  const z=KEYS.map((k,i)=>(x[i]-PARAM[k].lo)/(PARAM[k].hi-PARAM[k].lo));
-  const f=[1].concat(z, z.map(v=>v*v));
-  for(let i=0;i<NP;i++)for(let j=i+1;j<NP;j++)f.push(z[i]*z[j]);
-  return f;
-}
-const CLAMP={blue_milex:[5,1e9],red_milex:[5,1e9],euro_milex:[5,1e9],
-  usd_share:[CN.us_lo,CN.us_hi],rmb_share:[CN.rm_lo,CN.rm_hi],
-  awrp:[CN.aw_lo,CN.aw_hi],red_export:[CN.re_lo,CN.re_hi],nuc_ratio:[0.1,2.5]};
-function emuAll(x){
-  const f=feat(x), out={}; CHKEY.forEach(k=>out[k]=Array.from({length:T},()=>[0,0,0]));
-  P.emulator.target_index.forEach((ti,j)=>{
-    const co=P.emulator.coef[j]; let s=0;
-    for(let i=0;i<co.length;i++)s+=co[i]*f[i];
-    out[ti.c][ti.e][ti.q===0.1?0:ti.q===0.5?1:2]=s;
+  const hy = M.history.years.filter((y) => y >= 2015), off = M.history.years.indexOf(2015);
+  const traces = [];
+  M.blocks.forEach((b) => {
+    const seat = SEATS.includes(b);
+    traces.push({ x: hy.concat(years), y: M.history.levels[b].slice(off).concat(years.map((y) => G.states[y].lvl[b])).map((v) => v / 1000),
+                  mode: "lines", name: b, line: { color: COLOR[b], width: seat ? 2.2 : 1.2 } });
+    if (seat) traces.push({ x: [M.base_year].concat(years), y: [M.base[b]].concat(years.map((y) => REF.year_medians[y][b])).map((v) => v / 1000),
+                  mode: "lines", showlegend: false, hoverinfo: "skip", line: { color: COLOR[b], width: 1.2, dash: "dot" } });
   });
-  CHKEY.forEach(k=>{const cl=CLAMP[k];out[k]=out[k].map(tr=>{
-    const s=tr.slice().sort((a,b)=>a-b);
-    return s.map(v=>Math.min(cl[1],Math.max(cl[0],v)));});});
-  return out;
-}
+  plot("c-exp", traces, { yaxis: { title: { text: "Billions, constant 2024 US dollars" } },
+    shapes: [{ type: "line", x0: M.base_year, x1: M.base_year, yref: "paper", y0: 0, y1: 1, line: { color: "#9c6f86", width: 1, dash: "dot" } }] });
 
-/* ---------- generative recursion (mirrors build_data.py) ---------- */
-function initState(){const y=CN.y0;return {blue:y.blue_milex,red:y.red_milex,euro:y.euro_milex,
-  usd:y.usd_share,rmb:y.rmb_share,law:Math.log(y.awrp),rex:y.red_export,wh:y.red_wh,dep:y.blue_dep};}
-function drawEpoch(r){return {u:r(),n:Array.from({length:10},()=>gauss(r))};}
-function stepEpoch(st,x,d){
-  const g=k=>x[IX[k]], clip=(v,a,b)=>Math.min(b,Math.max(a,v));
-  const [n_bx,n_rx,n_ex,n_us,n_rm,n_aw,n_awj,n_re,n_nw,n_nd]=d.n;
-  const hz=clip(CN.hz_a+CN.hz_gray*g("r_gray")+CN.hz_shock*g("g_shock")
-    +CN.hz_post*g("b_posture")+CN.hz_int*g("r_gray")*(1-g("b_posture")),CN.hz_lo,CN.hz_hi);
-  const ep=d.u<hz?1:0;
-  const gb=CN.bx_a+CN.bx_fiscal*g("g_fiscal")+CN.bx_ind*g("b_industrial")+CN.bx_post*g("b_posture");
-  st.blue*=Math.pow(1+gb,2)*Math.exp(n_bx*CN.bx_sd);
-  const gr=CN.rx_a+CN.rx_naval*g("r_naval")+CN.rx_nuc*g("r_nuclear")+CN.rx_growth*g("g_growth");
-  st.red*=Math.pow(1+gr,2)*Math.exp(n_rx*CN.rx_sd);
-  const ge=CN.ex_a+CN.ex_euro*g("g_euro")+CN.ex_all*g("b_alliance");
-  st.euro*=Math.pow(1+ge,2)*Math.exp(n_ex*CN.ex_sd);
-  st.usd=clip(st.usd+CN.us_a+CN.us_findiv*g("r_findiv")+CN.us_ep*ep+n_us*CN.us_sd,CN.us_lo,CN.us_hi);
-  st.rmb=clip(st.rmb+CN.rm_a+CN.rm_findiv*g("r_findiv")+CN.rm_ep*ep+n_rm*CN.rm_sd,CN.rm_lo,CN.rm_hi);
-  const base=Math.log(CN.y0.awrp);
-  let law=base+CN.aw_phi*(st.law-base)+n_aw*CN.aw_sd;
-  if(ep){const jump=Math.log(CN.aw_jump_a+CN.aw_jump_gray*g("r_gray"))+n_awj*CN.aw_jump_sd;
-    law=Math.max(law,jump);}
-  const awrp=clip(Math.exp(law),CN.aw_lo,CN.aw_hi); st.law=Math.log(awrp);
-  st.rex=clip(st.rex+CN.re_a+CN.re_drive*g("r_export")+CN.re_bexp*Math.max(g("b_export"),0)
-    +CN.re_btight*Math.max(-g("b_export"),0)+CN.re_ep*ep+n_re*CN.re_sd,CN.re_lo,CN.re_hi);
-  const gn=CN.nw_a+CN.nw_tempo*g("r_nuclear")+n_nw*CN.nw_sd;
-  st.wh*=Math.pow(1+gn,2);
-  st.dep=clip(st.dep+CN.nd_upload*Math.max(-g("b_force"),0)+n_nd*CN.nd_sd,CN.nd_lo,CN.nd_hi);
-  return {ep,vals:{blue_milex:st.blue,red_milex:st.red,euro_milex:st.euro,usd_share:st.usd,
-    rmb_share:st.rmb,awrp,red_export:st.rex,nuc_ratio:st.wh/st.dep}};
-}
+  const hist = M.reserve.history, rx = [], ru = [], rc = [];
+  hist.quarters.forEach((s, i) => { const x = +s.slice(0, 4) + (+s.slice(6) - 1) / 4;
+    if (x >= 2017) { rx.push(x); ru.push(hist.usd[i]); rc.push(hist.cny[i]); } });
+  for (let qi = 0; qi < P.nq; qi++) { rx.push(qx(qi)); ru.push(G.q[qi].usd); rc.push(G.q[qi].cny); }
+  const fx = REF.usd_fan.map((k) => qx(k.qi));
+  plot("c-res", [
+    { x: fx, y: REF.usd_fan.map((k) => k.p90), mode: "lines", line: { width: 0 }, showlegend: false, hoverinfo: "skip" },
+    { x: fx, y: REF.usd_fan.map((k) => k.p10), mode: "lines", line: { width: 0 }, fill: "tonexty", fillcolor: "rgba(156,111,134,.2)", name: "Reference, 10th to 90th" },
+    { x: rx, y: ru, mode: "lines", name: "US dollar", line: { color: COLOR[US], width: 2 } },
+    { x: rx, y: rc, mode: "lines", name: "Renminbi (right axis)", yaxis: "y2", line: { color: COLOR[CN], width: 2 } }
+  ], { yaxis: { title: { text: "US dollar share, percent" } },
+       yaxis2: { title: { text: "Renminbi share, percent" }, overlaying: "y", side: "right", showgrid: false, zeroline: false, linecolor: "#9c6f86", rangemode: "tozero" },
+       margin: { l: 56, r: 56, t: 14, b: 40 } });
 
-/* ---------- game state ---------- */
-const GAME={seed:"20260724",mode:"hotseat",archetype:"patient",turn:0,
-  world:{g_fiscal:0,g_euro:0.5},sealed:{g_shock:0.5,g_growth:0},
-  commits:{blue:[],red:[]},intervals:{blue:[],red:[]},cost:{blue:0,red:0},
-  state:null,history:[],episodes:[],posterior:[],pendingSide:null};
-
-function sideParams(side){return P.moves[side];}
-function baseStance(side){const o={};sideParams(side).forEach(m=>o[m.key]=PARAM[m.key].base);return o;}
-function stanceFromLevels(side,levels){const o={};sideParams(side).forEach((m,i)=>o[m.key]=m.levels[levels[i]].value);return o;}
-function levelsCost(side,levels){let c=0;sideParams(side).forEach((m,i)=>c+=m.levels[levels[i]].cost);return c;}
-
-function buildX(blueStance,redStance,world,sealed){
-  const x=new Array(NP);
-  KEYS.forEach((k,i)=>{
-    if(k in blueStance)x[i]=blueStance[k];
-    else if(k in redStance)x[i]=redStance[k];
-    else if(k in world)x[i]=world[k];
-    else if(k in sealed)x[i]=sealed[k];
-    else x[i]=PARAM[k].base;
-  });
-  return x;
-}
-/* effective horizon constant vector: stances to date plus current held forward */
-function effVector(side,uptoTurn,currentLevels){
-  const own=[]; for(let s=0;s<uptoTurn;s++)own.push(stanceFromLevels(side,GAME.commits[side][s].levels));
-  if(currentLevels)own.push(stanceFromLevels(side,currentLevels));
-  const held=own.length?own[own.length-1]:baseStance(side);
-  while(own.length<T)own.push(held);
-  const avg={}; sideParams(side).forEach(m=>{avg[m.key]=own.reduce((a,o)=>a+o[m.key],0)/T;});
-  const other=side==="blue"?"red":"blue";
-  const sealedRef={g_shock:PARAM.g_shock.base,g_growth:PARAM.g_growth.base};
-  return side==="blue"
-    ? buildX(avg,baseStance(other),GAME.world,sealedRef)
-    : buildX(baseStance(other),avg,GAME.world,sealedRef);
-}
-function refVector(){return buildX(baseStance("blue"),baseStance("red"),GAME.world,
-  {g_shock:PARAM.g_shock.base,g_growth:PARAM.g_growth.base});}
-function jointVector(){ // debrief: true averages, true sealed
-  const avg=side=>{const a={};sideParams(side).forEach(m=>{a[m.key]=GAME.commits[side]
-    .reduce((s,c)=>s+stanceFromLevels(side,c.levels)[m.key],0)/GAME.commits[side].length;});return a;};
-  return buildX(avg("blue"),avg("red"),GAME.world,GAME.sealed);
-}
-
-/* ---------- pathway posterior ---------- */
-function pathwayScores(uptoTurn,trueSealed){
-  const avgOf=(side,key)=>{const cs=GAME.commits[side].slice(0,uptoTurn);
-    if(!cs.length)return PARAM[key].base;
-    return cs.reduce((s,c)=>s+stanceFromLevels(side,c.levels)[key],0)/cs.length;};
-  /* episode rate, not raw count, so the posterior does not saturate mid-game */
-  const eps=GAME.episodes.slice(0,uptoTurn).reduce((a,b)=>a+(b?1:0),0)/Math.max(1,uptoTurn);
-  const shock=trueSealed?GAME.sealed.g_shock:PARAM.g_shock.base;
-  const W=P.pathways;
-  const sA=W.accretion.r_naval*avgOf("red","r_naval")+W.accretion.r_export*avgOf("red","r_export")
-    +W.accretion.r_findiv*avgOf("red","r_findiv")+W.accretion.r_gray*avgOf("red","r_gray")
-    +W.accretion.episodes*eps;
-  const sB=W.retrenchment.g_fiscal*GAME.world.g_fiscal
-    +W.retrenchment.b_industrial_inv*(1-avgOf("blue","b_industrial"))
-    +W.retrenchment.b_posture_inv*(1-avgOf("blue","b_posture"))
-    +W.retrenchment.r_naval*avgOf("red","r_naval")+W.retrenchment.episodes*eps;
-  const sC=W.demonstration.r_gray*avgOf("red","r_gray")+W.demonstration.episodes*eps
-    +W.demonstration.r_nuclear*avgOf("red","r_nuclear")+W.demonstration.g_shock*shock;
-  const t=W.tau,m=Math.max(sA/t,sB/t,sC/t);
-  const eA=Math.exp(sA/t-m),eB=Math.exp(sB/t-m),eC=Math.exp(sC/t-m),Z=eA+eB+eC;
-  return {accretion:eA/Z,retrenchment:eB/Z,demonstration:eC/Z};
-}
-
-/* ---------- archetype priors ---------- */
-const ARCH={
-  patient:     {r_naval:[.05,.30,.65],r_nuclear:[.25,.55,.20],r_gray:[.70,.25,.05],
-                r_findiv:[.15,.50,.35],r_export:[.10,.40,.50]},
-  demonstrator:{r_naval:[.20,.50,.30],r_nuclear:[.15,.45,.40],r_gray:[.10,.35,.55],
-                r_findiv:[.30,.50,.20],r_export:[.30,.45,.25]},
-  constrained: {r_naval:[.35,.50,.15],r_nuclear:[.55,.35,.10],r_gray:[.55,.35,.10],
-                r_findiv:[.25,.50,.25],r_export:[.35,.45,.20]},
-  balancedBlue:{b_force:[.25,.50,.25],b_alliance:[.20,.50,.30],b_export:[.30,.40,.30],
-                b_posture:[.20,.50,.30],b_industrial:[.25,.50,.25]}
-};
-function aiLevels(side,turn){
-  const prior=side==="red"?ARCH[GAME.archetype]:ARCH.balancedBlue;
-  const r=rngFor("ai|"+side+"|"+turn);
-  return sideParams(side).map(m=>{
-    let w=prior[m.key].slice();
-    if(side==="red"&&GAME.archetype==="demonstrator"&&m.key==="r_gray"){
-      const shift=Math.min(0.06*turn,0.20);w=[Math.max(0,w[0]-shift),w[1],w[2]+shift];}
-    const u=r()*(w[0]+w[1]+w[2]);
-    return u<w[0]?0:(u<w[0]+w[1]?1:2);
-  });
-}
-
-/* ---------- scoring ---------- */
-function winkler(L,U,x,a){let s=U-L;if(x<L)s+=(2/a)*(L-x);if(x>U)s+=(2/a)*(x-U);return s;}
-function fmt(k,v){const dp=CH[CHIX[k]].dp;return v==null?"":Number(v).toFixed(dp);}
-
-/* ---------- fog / publication ---------- */
-function visibleVals(chanKey,tRes){ // array length T, null where unpublished after tRes resolved epochs
-  const lag=CH[CHIX[chanKey]].lag,out=[];
-  for(let e=0;e<T;e++){
-    const have=e<GAME.history.length;
-    let vis=false;
-    if(lag==="fast")vis=have&&e<tRes;
-    else if(lag==="flash")vis=have&&e<tRes;
-    else vis=have&&e<tRes-1;
-    out.push(vis?GAME.history[e][chanKey]:null);
-  }
-  return out;
-}
-function pubTag(chanKey,tRes){
-  const lag=CH[CHIX[chanKey]].lag;
-  if(lag==="fast")return {latest:tRes-1,tag:""};
-  if(lag==="flash")return {latest:tRes-1,tag:tRes>0?"provisional":""};
-  return {latest:tRes-2,tag:tRes>=1?"publishes next period":""};
-}
-
-/* ---------- UI helpers ---------- */
-const $=id=>document.getElementById(id);
-function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-  $(id).classList.add("active");window.scrollTo(0,0);}
-function optionWire(container){container.querySelectorAll(".opt").forEach(o=>{
-  const sync=()=>{const inp=o.querySelector("input");inp.checked=true;
-    container.querySelectorAll('.opt[data-grp="'+o.dataset.grp+'"]').forEach(x=>x.classList.remove("sel"));
-    o.classList.add("sel");o.dispatchEvent(new Event("optsel",{bubbles:true}));};
-  o.addEventListener("click",sync);
-  o.querySelector("input").addEventListener("change",sync);});}
-
-function moveMenuHTML(side,who){
-  return sideParams(side).map((m,mi)=>{
-    const opts=m.levels.map((lv,li)=>
-      '<label class="opt'+(li===1?" sel":"")+'" data-grp="'+who+"-"+m.key+'">'
-      +'<input type="radio" name="'+who+"-"+m.key+'" value="'+li+'"'+(li===1?" checked":"")+'>'
-      +'<span class="cost">'+("\u25CF".repeat(lv.cost)||"\u25CB")+'</span>'
-      +'<span class="ol">'+lv.label+'</span><br><span class="ob">'+lv.brief+'</span></label>').join("");
-    return '<div class="movecat"><span class="leg">'+m.label+'</span>'+opts+'</div>';
-  }).join("");
-}
-function readLevels(side,who){
-  return sideParams(side).map(m=>{
-    const el=document.querySelector('input[name="'+who+"-"+m.key+'"]:checked');
-    return el?parseInt(el.value,10):1;});
-}
-
-/* ---------- charts ---------- */
-const FONT={family:"Times New Roman, Times, serif",size:13,color:"#241d26"};
-const LAYOUT={paper_bgcolor:"rgba(0,0,0,0)",plot_bgcolor:"rgba(0,0,0,0)",font:FONT,
-  margin:{l:52,r:16,t:28,b:38},showlegend:false,
-  xaxis:{gridcolor:"#eddce6",zeroline:false},yaxis:{gridcolor:"#eddce6",zeroline:false}};
-const CFG={displayModeBar:false,responsive:true};
-function xCats(){return ["2025"].concat(P.epochs);}
-const FANSTATE={};
-function drawFan(div,res,chan,realized,title){
-  const y0=CH[CHIX[chan]].y0;
-  const lo=[y0].concat(res[chan].map(t=>t[0]));
-  const md=[y0].concat(res[chan].map(t=>t[1]));
-  const hi=[y0].concat(res[chan].map(t=>t[2]));
-  const rl=[y0].concat(realized);
-  const traces=[
-    {x:xCats(),y:lo,mode:"lines",line:{width:0},hoverinfo:"skip"},
-    {x:xCats(),y:hi,mode:"lines",line:{width:0},fill:"tonexty",
-     fillcolor:"rgba(156,111,134,.16)",hoverinfo:"skip"},
-    {x:xCats(),y:md,mode:"lines",line:{color:"#8a5a72",width:1.6,dash:"dot"},
-     name:"conditional median"},
-    {x:xCats(),y:rl,mode:"lines+markers",connectgaps:false,
-     line:{color:"#241d26",width:2},marker:{size:6,color:"#241d26"},name:"published"}];
-  const lay=JSON.parse(JSON.stringify(LAYOUT));
-  lay.title={text:title,font:{family:FONT.family,size:14}};
-  lay.yaxis.title={text:CH[CHIX[chan]].unit,font:{size:12}};
-  const same=FANSTATE[div]===chan;
-  FANSTATE[div]=chan;
-  if(same&&!REDUCED&&!SKIP){
-    try{
-      Plotly.animate(div,{data:traces.map(t=>({y:t.y})),traces:[0,1,2,3],layout:lay},
-        {transition:{duration:480,easing:"cubic-in-out"},frame:{duration:480,redraw:false}});
-      return;
-    }catch(e){/* fall through to a hard redraw */}
-  }
-  Plotly.react(div,traces,lay,CFG);
-}
-function drawPosterior(div,traj){
-  const x=traj.map((_,i)=>i===0?"setup":(i-1<ROMAN.length?ROMAN[i-1]:"close"));
-  const mk=(key,color)=>({x,y:traj.map(p=>p[key]),mode:"lines+markers",
-    line:{color,width:1.8},marker:{size:5},name:key});
-  const lay=JSON.parse(JSON.stringify(LAYOUT));
-  lay.showlegend=true;lay.legend={orientation:"h",font:{size:12}};
-  lay.yaxis.range=[0,1];lay.yaxis.title={text:"posterior probability",font:{size:12}};
-  Plotly.react(div,[mk("accretion","#31456e"),mk("retrenchment","#8a5a72"),
-    mk("demonstration","#7d3644")],lay,CFG);
-}
-
-/* ---------- period rail ---------- */
-function renderRail(tRes,current){
-  const rail=document.getElementById("rail");
-  rail.hidden=false;
-  const trk=rail.querySelector(".rail-track");
-  if(!trk.children.length){
-    trk.innerHTML=P.epochs.map((e,i)=>'<div class="rail-seg" data-t="'+i+'">'
-      +'<span class="rail-roman">'+ROMAN[i]+'<span class="rail-pip"></span></span>'
-      +'<span class="rail-years">'+e+'</span><span class="rail-fill"></span></div>').join("");
-  }
-  Array.from(trk.children).forEach((seg,i)=>{
-    seg.classList.toggle("done",i<tRes);
-    seg.classList.toggle("now",i===current);
-    seg.classList.toggle("episode",i<GAME.episodes.length&&GAME.episodes[i]);
-  });
-}
-
-/* ---------- indicator tables ---------- */
-function indicatorTable(tRes,withPrev){
-  let h="<thead><tr><th>series</th><th>unit</th><th style='text-align:right'>latest</th>"
-    +"<th style='text-align:right'>change</th><th>as of</th><th>status</th></tr></thead><tbody>";
-  CH.forEach(c=>{
-    const pt=pubTag(c.key,tRes);
-    let latest=null,prev=null,asof="2025";
-    if(pt.latest>=0&&pt.latest<GAME.history.length){
-      latest=GAME.history[pt.latest][c.key];asof=P.epochs[pt.latest];
-      prev=pt.latest>0?GAME.history[pt.latest-1][c.key]:c.y0;
-    }else{latest=c.y0;prev=null;}
-    let fromVal=latest;
-    if(withPrev){
-      const p0=pubTag(c.key,tRes-1);
-      fromVal=(p0.latest>=0&&p0.latest<GAME.history.length)
-        ?GAME.history[p0.latest][c.key]:c.y0;
-    }
-    const d=prev==null?"":(latest-prev>=0?"+":"")+fmt(c.key,latest-prev);
-    const tagCls=pt.tag==="provisional"?"prov":(pt.tag?"await":"");
-    const cell=withPrev
-      ?"<span class='tickcell' data-from='"+fromVal+"' data-to='"+latest
-        +"' data-dp='"+c.dp+"'>"+fmt(c.key,fromVal)+"</span>"
-      :fmt(c.key,latest);
-    h+="<tr><td class='sc'>"+c.label+"</td><td class='quiet'>"+c.unit+"</td>"
-      +"<td class='num'>"+cell+"</td><td class='num quiet'>"+d+"</td>"
-      +"<td class='tag'>"+asof+"</td><td class='tag "+tagCls+"'>"+(pt.tag||"final")+"</td></tr>";
-  });
-  return h+"</tbody>";
-}
-
-/* ---------- flow ---------- */
-function seatOrder(){return GAME.mode==="hotseat"?["blue","red"]
-  :GAME.mode==="solo_blue"?["blue"]:["red"];}
-
-function startGame(){
-  GAME.seed=$("seed").value.trim()||"20260724";
-  GAME.mode=document.querySelector('input[name="mode"]:checked').value;
-  GAME.archetype=$("archetype").value;
-  P.moves.world.forEach(w=>{
-    const el=document.querySelector('input[name="world-'+w.key+'"]:checked');
-    GAME.world[w.key]=w.levels[el?parseInt(el.value,10):1].value;});
-  const r=rngFor("sealed");
-  GAME.sealed.g_shock=PARAM.g_shock.lo+r()*(PARAM.g_shock.hi-PARAM.g_shock.lo);
-  GAME.sealed.g_growth=PARAM.g_growth.lo+r()*(PARAM.g_growth.hi-PARAM.g_growth.lo);
-  GAME.turn=0;GAME.commits={blue:[],red:[]};GAME.intervals={blue:[],red:[]};
-  GAME.cost={blue:0,red:0};GAME.state=initState();GAME.history=[];GAME.episodes=[];
-  GAME.posterior=[pathwayScores(0,false)];
-  conveneThen(beginCommitSequence);
-}
-function conveneThen(fn){
-  if(REDUCED){fn();return;}
-  const box=$("handoff"),txt=$("handoff-text"),btn=$("btn-handoff");
-  btn.style.display="none";
-  txt.innerHTML='<div class="convene-line">constituting the committees</div>'
-    +'<div class="convene-line" style="animation-delay:.35s">drawing sealed parameters</div>'
-    +'<div class="convene-line" style="animation-delay:.7s">opening the record, 2025</div>';
-  box.classList.add("active");
-  setTimeout(()=>{box.classList.remove("active");btn.style.display="";
-    txt.textContent="";fn();},1250);
-}
-function sealThen(fn){
-  if(REDUCED){fn();return;}
-  const s=$("seal");s.classList.add("active");
-  setTimeout(()=>{s.classList.remove("active");fn();},620);
-}
-function beginCommitSequence(){
-  GAME.pendingSide=seatOrder()[0];
-  if(GAME.mode==="hotseat")handoffThen(GAME.pendingSide,()=>renderCommit(GAME.pendingSide));
-  else renderCommit(GAME.pendingSide);
-}
-function handoffThen(side,fn){
-  $("handoff-text").textContent="Pass the device to the "
-    +(side==="blue"?"Blue":"Red")+" committee. The counterpart should step away before continuing.";
-  $("handoff").classList.add("active");
-  $("btn-handoff").onclick=()=>{$("btn-handoff").onclick=null;
-    $("handoff").classList.remove("active");fn();};
-}
-
-function renderCommit(side){
-  SKIP=false;
-  renderRail(GAME.turn,GAME.turn);
-  const banner=$("commit-banner");
-  banner.classList.remove("seat-blue","seat-red");
-  banner.classList.add(side==="blue"?"seat-blue":"seat-red");
-  $("commit-who").textContent=(side==="blue"?"Blue":"Red")+" committee";
-  $("commit-period").textContent="Move sheet, Period "+ROMAN[GAME.turn]+": "+P.epochs[GAME.turn];
-  $("indicator-table").innerHTML=indicatorTable(GAME.turn);
-  $("move-menus").innerHTML=moveMenuHTML(side,"mv");
-  optionWire($("move-menus"));
-  const sel=$("commit-chan");
-  if(!sel.options.length)CH.forEach(c=>sel.add(new Option(c.label,c.key)));
-  let intDirty=false;
-  $("int-lo").oninput=()=>{intDirty=true;};
-  $("int-hi").oninput=()=>{intDirty=true;};
-  const refresh=()=>{
-    const lv=readLevels(side,"mv");
-    const res=emuAll(effVector(side,GAME.turn,lv));
-    drawFan("commit-fan",res,sel.value,visibleVals(sel.value,GAME.turn),
-      CH[CHIX[sel.value]].label+", committee estimate");
-    const aw=res.awrp[GAME.turn];
-    if(!intDirty){$("int-lo").value=aw[0].toFixed(2);$("int-hi").value=aw[2].toFixed(2);}
-    $("int-hint").textContent="committee fan for this period: "
-      +aw[0].toFixed(2)+" to "+aw[2].toFixed(2);
-    $("commit-cost").textContent="commitment expenditure this period: "
-      +levelsCost(side,lv)+" (cumulative "+GAME.cost[side]+")";
+  $("again").onclick = front;
+  $("save").onclick = () => {
+    const rec = {
+      exercise: "The Primacy Premium, Committee Exercise", model: M.source, seed: G.seed,
+      seats: Object.fromEntries(SEATS.map((s) => [s, G.human[s] ? "committee" : "model"])),
+      classification: cls, sealed: { pathway: W.path, us_rate: W.usPath, event_year: end.eventYear,
+        event_quarter: end.eventYear ? E.qLabel(end.eventQ) : null, coefficients: W.coef, usd: W.usd, cny_logit: W.cny },
+      commitments: G.sheets, scores: G.scores,
+      years: years.map((y) => ({ year: y, growth_pct: G.recs[y].g, level_musd: G.states[y].lvl, model: G.recs[y].model })),
+      quarters: Object.keys(G.q).map(Number).sort((a, b) => a - b).filter((qi) => qi >= 0)
+        .map((qi) => ({ quarter: E.qLabel(qi), usd_pct: G.q[qi].usd, cny_pct: G.q[qi].cny })),
+      position: meas, reference_medians: Object.fromEntries(Object.keys(REF.dist).map((k) => [k, refMed(k)])) };
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(rec, null, 1)], { type: "application/json" }));
+    a.download = `committee-exercise-${G.seed}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
   };
-  sel.onchange=refresh;
-  if(GAME.commitHandler)$("move-menus").removeEventListener("optsel",GAME.commitHandler);
-  GAME.commitHandler=refresh;
-  $("move-menus").addEventListener("optsel",refresh);
-  refresh();
-  $("btn-commit").onclick=()=>submitCommit(side);
-  show("scr-commit");
 }
 
-function submitCommit(side){
-  if(GAME.commits[side].length>GAME.turn)return; /* already sealed this period */
-  const lo=parseFloat($("int-lo").value),hi=parseFloat($("int-hi").value);
-  if(!(isFinite(lo)&&isFinite(hi)&&lo<hi)){alert("State a valid interval: lower below upper.");return;}
-  const lv=readLevels(side,"mv");
-  GAME.commits[side].push({levels:lv});
-  GAME.cost[side]+=levelsCost(side,lv);
-  GAME.intervals[side].push([lo,hi]);
-  const order=seatOrder(),idx=order.indexOf(side);
-  if(idx+1<order.length){
-    GAME.pendingSide=order[idx+1];
-    sealThen(()=>handoffThen(GAME.pendingSide,()=>renderCommit(GAME.pendingSide)));
-  }else{
-    const human=order;
-    ["blue","red"].forEach(s=>{
-      if(!human.includes(s)){
-        const alv=aiLevels(s,GAME.turn);
-        GAME.commits[s].push({levels:alv});
-        GAME.cost[s]+=levelsCost(s,alv);
-        const res=emuAll(effVector(s,GAME.turn,alv)).awrp[GAME.turn];
-        GAME.intervals[s].push([res[0],res[2]]);
-      }});
-    sealThen(resolveTurn);
-  }
-}
-
-function resolveTurn(){
-  const t=GAME.turn;
-  const x=buildX(stanceFromLevels("blue",GAME.commits.blue[t].levels),
-                 stanceFromLevels("red",GAME.commits.red[t].levels),
-                 GAME.world,GAME.sealed);
-  const d=drawEpoch(rngFor("epoch|"+t));
-  const out=stepEpoch(GAME.state,x,d);
-  GAME.history.push(out.vals);GAME.episodes.push(out.ep===1);
-  GAME.posterior.push(pathwayScores(t+1,false));
-  renderResolve();
-}
-
-function renderResolve(){
-  const t=GAME.turn,tRes=t+1;
-  SKIP=false;
-  $("resolve-period").textContent="Period "+ROMAN[t]+": "+P.epochs[t];
-  const circ=$("circulars");circ.innerHTML="";
-  $("resolve-table").innerHTML="";
-  $("interval-table").innerHTML="";
-  $("leader-note").classList.remove("show");$("leader-note").textContent="";
-  const sel=$("resolve-chan");
-  if(!sel.options.length)CH.forEach(c=>sel.add(new Option(c.label,c.key)));
-  const res=emuAll(refVector());
-  const circularHTML=()=>{
-    if(GAME.episodes[t]){
-      const n=GAME.episodes.filter(Boolean).length;
-      return '<div class="circular"><div class="chead">'
-        +'<span>Resolution circular RC-'+EPOCH_END[t]+"/"
-        +String(n).padStart(2,"0")+'</span><span>listed conditions</span></div>'
-        +'<p>A chokepoint disruption episode is declared for the period. Listed areas extended; '
-        +'additional war risk premium fixed this period at '
-        +fmt("awrp",GAME.history[t].awrp)+' percent of hull and machinery value. '
-        +'Cover in affected waters is conditional on payment of the additional premium.</p></div>';
-    }
-    return '<p class="quiet">No episode declared this period. Listed areas unchanged.</p>';
-  };
-  const intervalHTML=animated=>{
-    const xr=GAME.history[t].awrp,a=P.scoring.alpha;
-    let it="<thead><tr><th>committee</th><th style='text-align:right'>stated interval</th>"
-      +"<th style='text-align:right'>fixing</th><th style='text-align:right'>score</th></tr></thead><tbody>";
-    ["blue","red"].forEach(s=>{
-      const [L,U]=GAME.intervals[s][t],sc=winkler(L,U,xr,a);
-      const hit=xr>=L&&xr<=U;
-      const scoreCell=animated
-        ?"<span class='tickcell' data-from='0' data-to='"+sc+"' data-dp='2'>0.00</span>"
-        :sc.toFixed(2);
-      it+="<tr><td class='sc' style='color:var(--"+s+")'>"+s+"</td>"
-        +"<td class='num'>"+L.toFixed(2)+" to "+U.toFixed(2)+"</td>"
-        +"<td class='num'>"+xr.toFixed(2)+"</td>"
-        +"<td class='num "+(hit?"score-ok":"score-miss")+"'>"+scoreCell+"</td></tr>";});
-    return it+"</tbody>";
-  };
-  const drawResolveFan=()=>drawFan("resolve-fan",res,sel.value,visibleVals(sel.value,tRes),
-    CH[CHIX[sel.value]].label+", reference estimate");
-  sel.onchange=drawResolveFan;
-  const prevLead=Object.entries(GAME.posterior[t]).sort((a,b)=>b[1]-a[1])[0][0];
-  const newLead=Object.entries(GAME.posterior[t+1]).sort((a,b)=>b[1]-a[1])[0][0];
-  const leaderNote=()=>{
-    if(prevLead!==newLead){
-      $("leader-note").textContent="The posterior has shifted: the leading pathway is now "
-        +newLead+".";
-      $("leader-note").classList.add("show");}
-  };
-  let finished=false,proceeded=false;
-  const applyFinal=()=>{
-    if(finished)return;finished=true;
-    circ.innerHTML=circularHTML();
-    $("resolve-table").innerHTML=indicatorTable(tRes,false);
-    drawResolveFan();
-    $("interval-table").innerHTML=intervalHTML(false);
-    drawPosterior("posterior-chart",GAME.posterior);
-    leaderNote();
-    renderRail(tRes,t);
-  };
-  const proceed=()=>{
-    if(proceeded)return;proceeded=true;
-    GAME.turn++;
-    if(GAME.turn<T)beginCommitSequence();else renderDebrief();
-  };
-  $("btn-next").textContent=t+1<T?"Proceed to Period "+ROMAN[t+1]:"Close the horizon";
-  $("btn-next").onclick=()=>{skipAll();applyFinal();proceed();};
-  show("scr-resolve");
-  playResolution();
-
-  async function playResolution(){
-    renderRail(t,t);
-    await pause(350);if(SKIP||finished){applyFinal();return;}
-    renderRail(tRes,t);
-    circ.innerHTML=circularHTML();
-    const cEl=circ.firstElementChild;
-    if(cEl&&GAME.episodes[t]&&!REDUCED)cEl.classList.add("stamp");
-    await pause(GAME.episodes[t]?900:350);if(SKIP||finished){applyFinal();return;}
-    $("resolve-table").innerHTML=indicatorTable(tRes,true);
-    const cells=Array.from(document.querySelectorAll("#resolve-table .tickcell"));
-    cells.forEach((el,i)=>{
-      const from=parseFloat(el.dataset.from),to=parseFloat(el.dataset.to),
-            dp=parseInt(el.dataset.dp,10);
-      if(from===to){el.textContent=to.toFixed(dp);return;}
-      setTimeout(()=>tick(el,from,to,dp,650),REDUCED||SKIP?0:i*110);});
-    await pause(1050);if(SKIP||finished){applyFinal();return;}
-    drawResolveFan();
-    await pause(450);if(SKIP||finished){applyFinal();return;}
-    $("interval-table").innerHTML=intervalHTML(true);
-    stagger(Array.from(document.querySelectorAll("#interval-table tbody tr")),140);
-    document.querySelectorAll("#interval-table .tickcell").forEach((el,i)=>{
-      setTimeout(()=>tick(el,0,parseFloat(el.dataset.to),2,600),
-        REDUCED||SKIP?0:250+i*160);});
-    await pause(800);if(SKIP||finished){applyFinal();return;}
-    drawPosterior("posterior-chart",GAME.posterior);
-    await pause(300);
-    leaderNote();
-    finished=true;
-  }
-}
-
-/* ---------- debrief ---------- */
-function scoreCard(side){
-  const last=GAME.history[T-1];
-  let met=0,rows=P.thresholds[side].map(th=>{
-    const v=last[th.channel];
-    const ok=th.op===">="?v>=th.value:v<=th.value;if(ok)met++;
-    return "<li class='"+(ok?"score-ok":"score-miss")+"'>"+(ok?"\u2713 ":"\u2717 ")
-      +th.label+" <span class='quiet mono'>("+fmt(th.channel,v)+")</span></li>";
-  }).join("");
-  const iv=GAME.intervals[side].reduce((s,pair,t)=>s+winkler(pair[0],pair[1],GAME.history[t].awrp,P.scoring.alpha),0);
-  return "<ul class='plain'>"+rows+"</ul>"
-    +"<p>Objectives attained: <b>"+met+" of "+P.thresholds[side].length+"</b><br>"
-    +"Commitment expenditure: <b><span class='tickcell mono' data-from='0' data-to='"
-    +GAME.cost[side]+"' data-dp='0'>0</span></b><br>"
-    +"Interval score, total: <b><span class='tickcell mono' data-from='0' data-to='"
-    +iv.toFixed(2)+"' data-dp='2'>0.00</span></b> <span class='quiet'>(lower is better)</span></p>";
-}
-function renderDebrief(){
-  renderRail(T,-1);
-  $("score-blue").innerHTML=scoreCard("blue");
-  $("score-red").innerHTML=scoreCard("red");
-  stagger(Array.from(document.querySelectorAll("#score-blue li, #score-red li")),110);
-  document.querySelectorAll("#score-blue .tickcell, #score-red .tickcell").forEach((el,i)=>{
-    setTimeout(()=>tick(el,0,parseFloat(el.dataset.to),parseInt(el.dataset.dp,10),700),
-      REDUCED?0:400+i*150);});
-  const sel=$("debrief-chan");
-  if(!sel.options.length)CH.forEach(c=>sel.add(new Option(c.label,c.key)));
-  const res=emuAll(jointVector());
-  const redraw=()=>drawFan("debrief-fan",res,sel.value,
-    GAME.history.map(h=>h[sel.value]),CH[CHIX[sel.value]].label+", joint conditional fan");
-  sel.onchange=redraw;redraw();
-  const finalPost=pathwayScores(T,true);
-  GAME.posterior.push(finalPost);
-  drawPosterior("debrief-posterior",GAME.posterior);
-  const lead=Object.entries(finalPost).sort((a,b)=>b[1]-a[1])[0];
-  $("pathway-verdict").innerHTML="<p>The play conditioned most heavily on the <b>"+lead[0]
-    +"</b> pathway, posterior "+(100*lead[1]).toFixed(0)+" percent at the close, sealed parameters revealed. "
-    +"Episodes declared: "+GAME.episodes.filter(Boolean).length+" of "+T+" periods.</p>";
-  $("sealed-reveal").innerHTML="<p class='mono'>shock propensity "+GAME.sealed.g_shock.toFixed(2)
-    +"<br>red macroeconomic tailwind "+GAME.sealed.g_growth.toFixed(2)+"</p>";
-  let mr="<thead><tr><th>period</th><th style='color:var(--blue)'>blue</th>"
-    +"<th style='color:var(--red)'>red</th><th>episode</th></tr></thead><tbody>";
-  for(let t=0;t<T;t++){
-    const bl=GAME.commits.blue[t].levels.map((li,mi)=>sideParams("blue")[mi].levels[li].label).join("; ");
-    const rl=GAME.commits.red[t].levels.map((li,mi)=>sideParams("red")[mi].levels[li].label).join("; ");
-    mr+="<tr><td class='sc'>"+ROMAN[t]+"</td><td>"+bl+"</td><td>"+rl+"</td>"
-      +"<td>"+(GAME.episodes[t]?"declared":"none")+"</td></tr>";}
-  $("move-record").innerHTML=mr+"</tbody>";
-  $("methods-debrief").innerHTML=methodsHTML();
-  $("btn-restart").onclick=()=>{location.reload();};
-  show("scr-debrief");
-}
-
-/* ---------- methods ---------- */
-function methodsHTML(){
-  const v=P.validation.per_channel;
-  let vt="<table><thead><tr><th>series</th><th style='text-align:right'>R squared, median</th>"
-    +"<th style='text-align:right'>R squared, minimum</th>"
-    +"<th style='text-align:right'>RMSE, median</th></tr></thead><tbody>";
-  CH.forEach(c=>{const x=v[c.key];
-    vt+="<tr><td class='sc'>"+c.label+"</td><td class='num'>"+x.r2_median.toFixed(3)
-      +"</td><td class='num'>"+x.r2_min.toFixed(3)+"</td><td class='num'>"
-      +x.rmse_median.toFixed(3)+"</td></tr>";});
-  vt+="</tbody></table>";
-  return "<p>Moves are stances on named parameters of the generative recursion documented in "
-    +"<span class='mono'>build_data.py</span>; they condition the forecast and do not "
-    +"script the outcome. Conditional fans are produced by a fitted emulator, a degree two "
-    +"polynomial response surface trained on a "+P.meta.design+" design of "+P.meta.n_design
-    +" points with "+P.meta.n_draws+" stochastic draws per point, seed "+P.meta.seed+". "
-    +"The resolution path is one seeded draw of the same recursion, so realized values and fans "
-    +"share a single generative process. Held out error on a reserved fifth of the design:</p>"
-    +vt
-    +"<p>Fans are conditioned in three tiers. On a committee's own move sheet, the fan conditions "
-    +"on that committee's stance held forward with the counterpart and the sealed world parameters "
-    +"at reference values. The shared resolution screen shows a reference fan with all stances at "
-    +"reference values, so it discloses neither committee's sealed choices. The debrief fan "
-    +"conditions on the true joint record and the revealed sealed parameters. A stance path is "
-    +"aggregated to a horizon constant conditioning vector for the emulator; a time varying "
-    +"emulator is noted as future work.</p>"
-    +"<p>Indicators publish on schedule: the war risk premium fixes within the period; "
-    +"expenditure series appear as provisional figures in the period and are finalized in the "
-    +"next; reserve composition, export shares, and warhead estimates publish one period behind. "
-    +"Calibration anchors, including the 2026 Gulf episode in which the additional premium moved "
-    +"from roughly 0.15 to 0.20 percent of hull value to about one percent under circular "
-    +"JWLA-033, are documented in the build script. Raw SIPRI and IMF files are excluded from the "
-    +"repository under publisher terms.</p>"
-    +"<p>Scoring is not zero sum: objective attainment against fixed side specific criteria, "
-    +"commitment expenditure, and a Winkler interval score at eighty percent nominal coverage. "
-    +"In solo play the scripted committee states its own emulator fan as its interval. "
-    +"License CC BY-NC 4.0.</p>";
-}
-
-/* ---------- boot ---------- */
-function boot(){
-  const wm=$("world-menus");
-  wm.innerHTML=P.moves.world.map(w=>{
-    const opts=w.levels.map((lv,li)=>
-      '<label class="opt'+(li===1?" sel":"")+'" data-grp="world-'+w.key+'">'
-      +'<input type="radio" name="world-'+w.key+'" value="'+li+'"'+(li===1?" checked":"")+'>'
-      +'<span class="ol">'+lv.label+'</span><br><span class="ob">'+lv.brief+'</span></label>').join("");
-    return '<div class="movecat"><span class="leg">'+w.label+'</span>'+opts+'</div>';
-  }).join("");
-  optionWire(document.querySelector("#scr-setup"));
-  const modeSync=()=>{const m=document.querySelector('input[name="mode"]:checked').value;
-    $("arch-block").style.display=m==="solo_blue"?"block":"none";};
-  document.querySelectorAll('input[name="mode"]').forEach(i=>i.addEventListener("change",modeSync));
-  document.querySelector("#scr-setup").addEventListener("optsel",modeSync);
-  modeSync();
-  $("methods-setup").innerHTML=methodsHTML();
-  $("btn-start").onclick=startGame;
-  /* self check: emulator monotonicity at the reference point */
-  const chk=emuAll(refVector());
-  CHKEY.forEach(k=>chk[k].forEach(tr=>{
-    if(!(tr[0]<=tr[1]&&tr[1]<=tr[2]))console.warn("quantile order",k,tr);}));
-}
-document.addEventListener("DOMContentLoaded",boot);
+/* --------------------------------------------------------------- boot */
+SEATS.forEach((s) => {
+  const y = M.history.years, lv = M.history.levels[s];
+  const i0 = y.indexOf(M.rates.trend_window[0]), i1 = y.indexOf(M.rates.trend_window[1]);
+  D.seats[s].trend = 100 * (Math.pow(lv[i1] / lv[i0], 1 / (i1 - i0)) - 1);
+});
+$("foot").innerHTML = `Alyssa I. Agard. Licensed CC BY-NC 4.0. Model: <a href="${M.source.repository}">The Primacy Premium</a>, release ${esc(M.source.version)}, commit ${M.source.commit.slice(0, 7)}. Built ${esc(PAYLOAD.meta.built)}. Source: <a href="https://github.com/alyssaagard/primacy-committee-exercise">repository</a>, <a href="https://github.com/alyssaagard/primacy-committee-exercise/blob/main/METHOD.md">method</a>.`;
+window.CX = { get game() { return G; }, front, newGame };
+front();
 </script>
 </body>
 </html>

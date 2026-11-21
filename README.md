@@ -1,133 +1,62 @@
 # Committee Exercise
 
-**The Primacy Premium · two sided conditional play on the pathways question, 2026 to 2035**
+A four-seat budget exercise on the estimated model of The Primacy Premium, 2026 to 2035.
 
-A wargame in the analytic tradition rather than the hex and counter one. Two committees
-commit stances sealed and simultaneously across five periods. Stances condition the
-forecast, they do not script the outcome: every fan on screen is a conditional forecast
-served by an emulator fitted to a documented generative process, and the realized path
-is one seeded draw of that same process. Indicators publish on their real schedules, so
-each committee reads the world late and partial, which is the condition the underlying
-research project is about. Scoring is not zero sum.
+Alyssa I. Agard
 
-**Play:** `index.html`, served by GitHub Pages at the repository root, or opened
-directly in a browser. No build step, no server; the only external dependency is the
-Plotly CDN.
+Play: https://alyssaagard.github.io/primacy-committee-exercise/
 
-## The game
+## What it is
 
-- **Five periods**, 2026 to 2027 through 2034 to 2035, tracked on a persistent period
-  rail with episode markers.
-- **Three modes**: two committees on one device with sealed handoffs, solo as Blue
-  against a Red archetype prior (patient accretionist, opportunistic demonstrator,
-  resource constrained consolidator), or solo as Red against a balanced Blue program.
-- **Five stance categories per side**, three levels each, every level a value of a
-  named simulation parameter. The committee estimate redraws live as stances change:
-  the morphing fan is the conditioning, made visible.
-- **Publication lag as fog.** The war risk premium fixes in period; expenditure
-  publishes provisional then final; reserve composition, export shares, and warhead
-  estimates arrive a period behind. Unpublished cells render hatched until the record
-  catches up.
-- **Episodes as circulars.** Chokepoint disruption episodes stamp in as resolution
-  circulars in the Joint War Committee register, with premium fixings calibrated to
-  the 2026 Gulf case.
-- **Scoring on three axes per side**: objective attainment against fixed criteria,
-  commitment expenditure, and a Winkler interval score at eighty percent nominal
-  coverage on premium forecasts stated before each resolution.
-- **A pathway posterior** that updates every period. A committee that believes it is
-  playing accretion can discover at period four that its choices have put the
-  probability mass on retrenchment. That mechanic carries the project's central
-  proposition: the pathway, not the endpoint, carries the variance.
+Up to four committees set real military expenditure for the United States, China, NATO Europe, and the Indo-Pacific allies over five periods to 2035. Commitments are sealed and simultaneous. Expenditure and reserve data publish with their real lags, so each committee decides on a record one to two years old for every seat but its own. Each committee also states 80 percent intervals for two quantities each period and is scored on them.
 
-## Honesty constraints
+Any seat without a committee is run by the estimated model of [The Primacy Premium](https://github.com/alyssaagard/primacy-premium), release 1.1.0. The model also runs the hedging middle powers, the rest of the world, and the US dollar and renminbi reserve shares. One person can play any single seat against the model.
 
-The exercise makes no causal claim it cannot support. Fans run in three conditioning
-tiers so that no screen leaks a sealed stance: a committee's own sheet conditions on
-its stance with the counterpart at reference values, the shared resolution screen
-shows a reference fan, and only the debrief recomputes at the true joint record with
-the sealed world parameters revealed. The divergence between tiers is the measured
-cost of the fog.
+The exercise is a conditional forecasting instrument. It reports what the estimated model implies given the commitments made. It does not state that any path will occur.
 
-Emulator error is disclosed in the page appendix rather than buried in the build:
-held out median R squared 0.997 overall, 0.875 on the war risk premium, which is the
-jump driven channel. Process parity between the Python build and the JavaScript
-resolution recursion is verified at under 1 percent on every channel except the
-premium, at 2.3 percent, attributable to draw counts. Full method in
-[METHOD.md](METHOD.md).
+## Relation to the model
 
-## Reproduce
+The engine is the model's recursion, run in the browser. With every seat run by the model it reproduces the published 2035 medians of release 1.1.0 for all three pathways. Across 27 medians at 10,000 draws, the largest deviation is 1.02 percent for expenditure levels and 0.15 points for shares, which is sampling error from a different random number generator. The build fails if any median is outside tolerance.
 
-```bash
-python3 build_data.py    # design, simulation, emulator fit, validation; writes payload.json
-python3 build_social.py  # renders both share card variants
-python3 build_page.py    # injects the payload and site URL; writes index.html
+Release 1.0.0 of this exercise used a separate simulation with coefficients set by the designer. Release 2.0.0 keeps its frame (sealed commitment, five periods, publication lags, scored intervals, a sealed record opened at the debrief, no winner) and replaces that engine with the estimated model. See `METHOD.md`, section 2.
+
+## What a session produces
+
+- A resolution after each period: newly published figures, any circular, and interval scores.
+- A debrief: the sealed pathway and coefficient draws, every block's path against a reference, each committee's objectives, outlays, and calibration, and each commitment set against the model equation for that seat.
+- A downloadable record in JSON, with commitments, realized paths, sealed draws, and scores.
+
+## Estimated and assumed
+
+Coefficients, covariance matrices, residuals, pathway rates, and the 2022 episode quantities come from release 1.1.0 and are used unchanged. The seats, the commitment range, the equal pathway probabilities, the objectives, and the rule that a committed rate is realized exactly are assumptions of the exercise. `METHOD.md`, section 14, lists both.
+
+## Repository
+
+| File | Purpose |
+|---|---|
+| `index.html` | The built exercise. Self-contained apart from the chart library. |
+| `template.html` | Page source: markup, styles, interface. |
+| `engine.js` | The simulation engine. Runs in the browser and under Node. |
+| `build_data.py` | Reads model outputs into `model_inputs.json`; writes `payload.json`. |
+| `reference.js` | Parity check against release 1.1.0; writes `reference.json`. |
+| `build_page.py` | Assembles `index.html`. |
+| `build_social.py` | Draws the share card from `reference.json`. |
+| `tests/playthrough.py` | Plays four seat configurations to the debrief; fails on any page error. |
+| `model_inputs.json` | Quantities copied from the model at commit `dc82a6d`. |
+| `METHOD.md` | Full method, limitations, and build instructions. |
+
+## Build
+
+```
+python build_data.py
+node reference.js
+python build_social.py
+python build_page.py
+python tests/playthrough.py
 ```
 
-Set `SITE_URL` in `build_page.py`, or pass it at build time, before the first
-publish. `SOCIAL_CARD` in the same file selects which share card `og:image` points
-at, and `PLATE_CREDIT` in `build_social.py` carries the image credit line printed on
-the plate variant. All three warn or fail rather than publishing a placeholder. Share card scrapers require absolute URLs, so `og:image` and `og:url` are
-the only absolute references on the page; everything else stays relative so the site
-works under a project path.
+To move to a later release of the model, run `python build_data.py --model PATH` against a checkout of that release, then rebuild. The parity check will fail if the engine and the model have diverged.
 
-numpy and pillow required, scipy preferred for the Sobol design. Seed 20260724 throughout, so the
-same seed reproduces the same design, coefficients, sealed draws, and resolution path.
-The included GitHub Actions workflow rebuilds on every push and fails if the committed
-`index.html` does not match a fresh rebuild, so reproducibility is checked rather than
-asserted.
+## Citation and license
 
-Raw SIPRI and IMF files are excluded under publisher terms. Calibration anchors, among
-them the 2025 US real expenditure decline, the renminbi reserve share peaking in 2021
-and declining since, and the fivefold Gulf premium move under circular JWLA-033, are
-hardcoded with provenance in the `build_data.py` header.
-
-## Repository layout
-
-| File | Role |
-| --- | --- |
-| `index.html` | The built game, self contained apart from the Plotly CDN |
-| `build_data.py` | Parameter space, generative recursion, Sobol design, emulator fit, validation |
-| `build_page.py` | Payload injection into the template |
-| `template.html` | Page template with the engine, payload token unfilled |
-| `payload.json` | Generated: emulator coefficients, constants, move menus, thresholds, validation |
-| `METHOD.md` | Full design and method documentation |
-| `favicon.ico`, `favicon-16x16.png`, `favicon-32x32.png` | Browser tab icons |
-| `apple-touch-icon.png` | iOS home screen icon, flattened to an opaque background |
-| `android-chrome-192x192.png`, `android-chrome-512x512.png` | Android and PWA icons |
-| `site.webmanifest` | Web app manifest, relative paths for project page hosting |
-| `social-card-photo.jpg` | Open Graph share image, photograph only, 1200 x 630, current default |
-| `social-card-photo.png` | Lossless version of the same card |
-| `social-card-plate.png` | Open Graph share image, photographic plate variant, 1200 x 630 |
-| `social-card.png` | Open Graph share image, conditional fan variant, 1200 x 630 |
-| `social-card-github.png` | Repository social preview, 1280 x 640 |
-| `social-plate-source.jpg` | Source photograph for the plate variant, used by permission |
-| `build_social.py` | Renders both share cards |
-| `.github/workflows/build.yml` | Reproducibility check on every push |
-
-## Publish
-
-Create the repository, push, then Settings, Pages, deploy from `main` at `/ (root)`.
-The game is live at `https://USERNAME.github.io/REPOSITORY/` within a minute. The
-`.nojekyll` file is included so Pages serves the site without a Jekyll pass.
-
-## Relation to the main project
-
-This exercise is the interactive layer of The Primacy Premium, a quantitative research
-project producing conditional forecasts of defense and commercial markets under
-Chinese military primacy by 2035. The generative constants here are a transparent
-placeholder layer: when the main project's calibration module exposes its transfer
-coefficients as addressable parameters, they swap into one block of `build_data.py`
-and everything downstream regenerates.
-
-## Accessibility
-
-Motion is deliberate and bounded: number fixings tick, circulars stamp, rules draw,
-reveals stagger. All of it respects `prefers-reduced-motion`, every sequence is
-skippable from the proceed control, and the exercise is fully playable by keyboard.
-
-## License and citation
-
-CC BY-NC 4.0. See [LICENSE.md](LICENSE.md). A `CITATION.cff` is included; GitHub
-renders it as a citation block on the repository page.
-
-Alyssa Agard.
+Cite as given in `CITATION.cff`. Licensed CC BY-NC 4.0; see `LICENSE.md`. Source data remain subject to their publishers' terms.

@@ -1,23 +1,38 @@
 cff-version: 1.2.0
-message: If you use or reference this exercise, please cite it as below.
-title: "Committee Exercise: The Primacy Premium"
+message: "If you use this exercise, please cite it as below. The model it runs has its own citation; see the primacy-premium repository."
+title: "Committee Exercise: a four-seat budget exercise on the estimated model of The Primacy Premium, 2026 to 2035"
+type: software
 authors:
   - family-names: Agard
-    given-names: Alyssa
-version: 1.0.0
-date-released: "2026-08-01"
+    given-names: Alyssa I.
+version: 2.0.0
+date-released: "2026-11-21"
 license: CC-BY-NC-4.0
-repository-code: "https://github.com/USERNAME/REPOSITORY"
+repository-code: "https://github.com/alyssaagard/primacy-committee-exercise"
+url: "https://alyssaagard.github.io/primacy-committee-exercise/"
 abstract: >-
-  A two sided conditional forecasting wargame on Chinese military primacy,
-  2026 to 2035, with sealed simultaneous play, publication lag fog, and
-  emulator served forecast fans. The interactive layer of The Primacy
-  Premium research project.
+  A browser exercise in which up to four committees set real military
+  expenditure for the United States, China, NATO Europe, and the
+  Indo-Pacific allies over five periods to 2035. Commitments are sealed and
+  simultaneous, the record publishes with its real lags, and interval
+  statements are scored. Seats without a committee, the remaining blocks,
+  and the reserve currency shares are run by the estimated model of The
+  Primacy Premium, release 1.1.0. The engine is checked against the
+  published medians of that release.
 keywords:
   - conditional forecasting
   - wargaming
+  - defense economics
   - defense policy
-  - scenario analysis
-  - surrogate modeling
-  - emulation
-  - quantitative research
+  - military expenditure
+  - burden sharing
+  - reserve currencies
+  - interval scoring
+references:
+  - type: software
+    title: "The Primacy Premium: conditional forecasts of defense and commercial markets under Chinese military primacy, 2026 to 2035"
+    authors:
+      - family-names: Agard
+        given-names: Alyssa I.
+    version: 1.1.0
+    repository-code: "https://github.com/alyssaagard/primacy-premium"

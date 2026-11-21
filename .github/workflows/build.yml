@@ -1,0 +1,36 @@
+# Rebuilds the page from source on every push and fails if the committed
+# index.html differs from the rebuild, or if the engine no longer matches the
+# published medians of the model.
+
+name: verify build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Keep the committed build
+        run: cp index.html /tmp/committed.html
+      - name: Rebuild the payload and the page
+        run: |
+          python build_data.py
+          python build_page.py
+      - name: Compare with the committed build
+        run: |
+          if ! diff -q /tmp/committed.html index.html > /dev/null; then
+            echo "::error::index.html is stale. Run the build and commit."
+            exit 1
+          fi
+      - name: Check the engine against the published model medians
+        run: node reference.js

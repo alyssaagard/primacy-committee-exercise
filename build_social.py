@@ -1,248 +1,113 @@
 #!/usr/bin/env python3
 """
 build_social.py
-Renders social-card.png, the Open Graph share image, at 1200 x 630.
+Renders the share card: social-card.png (1200 x 630) and
+social-card-github.png (1280 x 640).
 
-The card is drawn in the project's register: near white pink ground, Liberation
-Serif (metrically compatible with Times New Roman), small caps set as tracked
-capitals, double rules. The fan on the card is not decoration: it is a real
-conditional forecast produced by the same simulation as the exercise, run at the
-reference stance under seed 20260724, so the share image is an output of the
-model rather than an illustration of one.
+The fan on the card is model output. It is the 10th to 90th percentile
+band and median of the US dollar reserve share under the accretion pathway
+with every seat run by the model, read from reference.json.
 
-Rendered at 2x and downsampled with Lanczos for crisp type at small display
-sizes, which is where share cards actually get seen.
+Type is Liberation Serif, which is metrically compatible with Times New
+Roman. Small caps are set as tracked capitals. The card is drawn at twice
+size and reduced.
+
+Run: python build_social.py   (after reference.js)
 """
 
-import sys
+import json
+from pathlib import Path
 
-import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-import build_data as M
-
-# Credit line printed on the plate variant. Fill this in with the rights holder
-# and the terms under which the image is used before publishing.
-PLATE_CREDIT = "PLATE: CREDIT LINE TO BE SUPPLIED, USED BY PERMISSION"
-PLATE_SOURCE = "social-plate-source.jpg"
-
-W, H = 1200, 630
-S = 2                      # supersample factor
-PAGE = (255, 248, 253)     # #fff8fd
-INK = (36, 29, 38)         # #241d26
-RULE = (156, 111, 134)     # #9c6f86
-MUTED = (109, 90, 102)     # #6d5a66
-BAND = (238, 216, 229)     # fan fill, flattened from the page rgba
-MEDIAN = (138, 90, 114)    # #8a5a72
-
-SERIF = "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf"
-ITALIC = "/usr/share/fonts/truetype/liberation/LiberationSerif-Italic.ttf"
+HERE = Path(__file__).resolve().parent
+S = 2
+PAGE, INK = (255, 248, 253), (36, 29, 38)
+RULE, MUTED = (156, 111, 134), (109, 90, 102)
+BAND, MEDIAN = (238, 216, 229), (138, 90, 114)
+FONTS = "/usr/share/fonts/truetype/liberation/"
+SERIF = FONTS + "LiberationSerif-Regular.ttf"
+ITALIC = FONTS + "LiberationSerif-Italic.ttf"
 
 
 def font(path, size):
     return ImageFont.truetype(path, size * S)
 
 
-def text_width(draw, s, f, track=0):
-    if not track:
-        return draw.textlength(s, font=f)
-    return sum(draw.textlength(c, font=f) for c in s) + track * S * (len(s) - 1)
+def width(d, s, f, track):
+    return sum(d.textlength(c, font=f) for c in s) + track * S * (len(s) - 1)
 
 
-def tracked(draw, xy, s, f, fill, track=0, anchor_center=None):
-    """Draw text with letter tracking. anchor_center: x centre in 1x units."""
-    x, y = xy[0] * S, xy[1] * S
-    if anchor_center is not None:
-        x = anchor_center * S - text_width(draw, s, f, track) / 2
-    if not track:
-        draw.text((x, y), s, font=f, fill=fill)
-        return
+def text(d, y, s, f, fill, track=0, x=None, center=None, right=None):
+    w = width(d, s, f, track)
+    px = (x * S if x is not None else
+          center * S - w / 2 if center is not None else right * S - w)
     for c in s:
-        draw.text((x, y), c, font=f, fill=fill)
-        x += draw.textlength(c, font=f) + track * S
+        d.text((px, y * S), c, font=f, fill=fill)
+        px += d.textlength(c, font=f) + track * S
 
 
-def double_rule(draw, y, x0, x1, gap=4, w=1):
-    for dy in (0, gap):
-        draw.rectangle([x0 * S, (y + dy) * S, x1 * S, (y + dy) * S + w * S - 1], fill=RULE)
+def double_rule(d, y, x0, x1):
+    for dy in (0, 4):
+        d.rectangle([x0 * S, (y + dy) * S, x1 * S, (y + dy) * S + S - 1],
+                    fill=RULE)
 
 
-def reference_fan():
-    """Quantiles of the red expenditure index at the reference stance."""
-    rng = np.random.default_rng(M.SEED)
-    X = M.BASE.copy().reshape(1, -1)
-    Y = M.simulate(X, 6000, rng)
-    ci = M.CH_KEYS.index("red_milex")
-    q = np.quantile(Y[0, ci, :, :], [0.1, 0.5, 0.9], axis=1)
-    lo = np.concatenate([[100.0], q[0]])
-    md = np.concatenate([[100.0], q[1]])
-    hi = np.concatenate([[100.0], q[2]])
-    return lo, md, hi
-
-
-def draw_fan(draw, box):
-    """box: (x0, y0, x1, y1) in 1x units."""
+def fan(d, box):
+    ref = json.loads((HERE / "reference.json").read_text())
+    start = json.loads((HERE / "payload.json").read_text())[
+        "model"]["reserve"]["usd0"]
+    lo = [start] + [k["p10"] for k in ref["usd_fan"]]
+    md = [start] + [k["p50"] for k in ref["usd_fan"]]
+    hi = [start] + [k["p90"] for k in ref["usd_fan"]]
     x0, y0, x1, y1 = box
-    lo, md, hi = reference_fan()
-    n = len(lo)
-    ymin, ymax = 92.0, float(hi.max()) * 1.02
+    n, vmin, vmax = len(lo), min(lo) - 0.5, max(hi) + 0.5
     xs = [x0 + (x1 - x0) * i / (n - 1) for i in range(n)]
 
     def py(v):
-        return y1 - (v - ymin) / (ymax - ymin) * (y1 - y0)
+        return y1 - (v - vmin) / (vmax - vmin) * (y1 - y0)
 
-    poly = [(xs[i] * S, py(hi[i]) * S) for i in range(n)] + \
-           [(xs[i] * S, py(lo[i]) * S) for i in range(n - 1, -1, -1)]
-    draw.polygon(poly, fill=BAND)
-
-    # median, dotted in the manner of the page
-    for i in range(n - 1):
+    d.polygon([(xs[i] * S, py(hi[i]) * S) for i in range(n)]
+              + [(xs[i] * S, py(lo[i]) * S) for i in range(n - 1, -1, -1)],
+              fill=BAND)
+    for i in range(n - 1):            # dotted median
         ax, ay, bx, by = xs[i], py(md[i]), xs[i + 1], py(md[i + 1])
-        steps = 34
-        for k in range(steps):
-            if k % 2:
-                continue
-            t0, t1 = k / steps, (k + 0.85) / steps
-            draw.line([((ax + (bx - ax) * t0) * S, (ay + (by - ay) * t0) * S),
-                       ((ax + (bx - ax) * t1) * S, (ay + (by - ay) * t1) * S)],
-                      fill=MEDIAN, width=2 * S)
-
-    # period ticks on the baseline
-    for i in range(n):
-        draw.line([(xs[i] * S, y1 * S), (xs[i] * S, (y1 + 5) * S)], fill=RULE, width=1 * S)
-    draw.line([(x0 * S, y1 * S), (x1 * S, y1 * S)], fill=RULE, width=1 * S)
+        for k in range(0, 6, 2):
+            t0, t1 = k / 6, (k + 1) / 6
+            d.line([((ax + (bx - ax) * t0) * S, (ay + (by - ay) * t0) * S),
+                    ((ax + (bx - ax) * t1) * S, (ay + (by - ay) * t1) * S)],
+                   fill=MEDIAN, width=2 * S)
+    d.line([(x0 * S, y1 * S), (x1 * S, y1 * S)], fill=RULE, width=S)
+    return md[0], md[-1]
 
 
-def draw_plate(img, d, box):
-    """Set the photograph as a framed plate, the way a typographic page carries
-    a photographic figure: ruled frame, its own ground, a caption beneath."""
-    x0, y0, x1, y1 = box
-    side = min(x1 - x0, y1 - y0)
-    src = Image.open(PLATE_SOURCE).convert("RGB")
-    n = min(src.size)
-    src = src.crop(((src.width - n) // 2, (src.height - n) // 2,
-                    (src.width + n) // 2, (src.height + n) // 2))
-    src = src.resize((side * S, side * S), Image.LANCZOS)
-    img.paste(src, (x0 * S, y0 * S))
-    d.rectangle([x0 * S, y0 * S, (x0 + side) * S - 1, (y0 + side) * S - 1],
-                outline=RULE, width=1 * S)
-    return x0 + side, y0 + side
-
-
-def render_plate(w=W, h=H, out="social-card-plate.png"):
-    if "TO BE SUPPLIED" in PLATE_CREDIT:
-        print("WARNING: PLATE_CREDIT is still a placeholder. Set the rights holder")
-        print("         and terms of use before publishing this variant.")
+def render(w, h, out):
     img = Image.new("RGB", (w * S, h * S), PAGE)
     d = ImageDraw.Draw(img)
-
-    ml, mr = 76, w - 76
-    double_rule(d, 52, ml, mr)
-    double_rule(d, 536, ml, mr)
-
-    px1, py1 = draw_plate(img, d, (ml, 96, ml + 400, 496))
-
-    f_credit = font(SERIF, 12)
-    tracked(d, (ml, py1 + 10), PLATE_CREDIT, f_credit, MUTED, track=2)
-
-    tx = px1 + 54
-    f_eyebrow = font(SERIF, 18)
-    f_title = font(SERIF, 62)
-    f_sub = font(ITALIC, 23)
-    f_rail = font(SERIF, 17)
-
-    tracked(d, (tx, 128), "THE PRIMACY PREMIUM", f_eyebrow, MUTED, track=7)
-    tracked(d, (tx, 166), "Committee", f_title, INK, track=1)
-    tracked(d, (tx, 242), "Exercise", f_title, INK, track=1)
-    tracked(d, (tx, 336), "Two sided conditional play on the", f_sub, MUTED)
-    tracked(d, (tx, 368), "pathways question, 2026 to 2035", f_sub, MUTED)
-
-    d.rectangle([tx * S, 420 * S, (tx + 120) * S, 420 * S + 1 * S - 1], fill=RULE)
-    tracked(d, (tx, 438), "CONDITIONAL FORECASTING", f_rail, MUTED, track=5)
-    tracked(d, (tx, 464), "UNDER SEALED SIMULTANEOUS PLAY", f_rail, MUTED, track=5)
-
-    byline = "ALYSSA AGARD"
-    bw = text_width(d, byline, f_rail, 6)
-    tracked(d, (mr - bw / S, 560), byline, f_rail, MUTED, track=6)
-    rail = "  ".join(["I", "II", "III", "IV", "V"])
-    tracked(d, (ml, 560), rail, f_rail, RULE, track=6)
-
-    img = img.resize((w, h), Image.LANCZOS)
-    img.save(out, optimize=True)
-    print(f"wrote {out} ({w}x{h})")
-
-
-def render_photo(w=W, h=H, out="social-card-photo.png"):
-    """The source photograph alone at share card dimensions, letterboxed onto its
-    own ground so the full figure survives; scrapers crop, they do not letterbox."""
-    src = Image.open(PLATE_SOURCE).convert("RGB")
-    scale = h / src.height
-    im = src.resize((int(src.width * scale), h), Image.LANCZOS)
-    bg = Image.new("RGB", (w, h), src.getpixel((20, 20)))
-    bg.paste(im, ((w - im.width) // 2, 0))
-    bg.save(out, optimize=True)
-    print(f"wrote {out} ({w}x{h}, {len(open(out,'rb').read())//1024} KB)")
-
-    # WhatsApp silently drops og:image over roughly 300 KB, so also emit a JPEG
-    # under that ceiling. This is the file the share tags actually point at.
-    jpg = out.rsplit(".", 1)[0] + ".jpg"
-    for q in (88, 82, 76, 70, 64):
-        bg.save(jpg, quality=q, optimize=True, progressive=True)
-        size = len(open(jpg, "rb").read())
-        if size < 290_000:
-            break
-    print(f"wrote {jpg} ({w}x{h}, {size//1024} KB, quality {q})")
-
-
-def render(w=W, h=H, out="social-card.png"):
-    img = Image.new("RGB", (w * S, h * S), PAGE)
-    d = ImageDraw.Draw(img)
-
-    ml, mr = 76, w - 76
-    f_eyebrow = font(SERIF, 19)
-    f_title = font(SERIF, 82)
-    f_sub = font(ITALIC, 27)
-    f_small = font(SERIF, 17)
+    ml, mr, top = 76, w - 76, (h - 630) // 2
+    double_rule(d, top + 52, ml, mr)
+    text(d, top + 84, "THE PRIMACY PREMIUM", font(SERIF, 19), MUTED, 7,
+         center=w / 2)
+    text(d, top + 122, "Committee Exercise", font(SERIF, 82), INK, 1,
+         center=w / 2)
+    text(d, top + 232,
+         "A four-seat budget exercise on the estimated model, 2026 to 2035",
+         font(ITALIC, 27), MUTED, center=w / 2)
+    first, last = fan(d, (ml, top + 300, mr, top + 470))
+    f_small = font(SERIF, 16)
+    text(d, top + 480, "2026", f_small, MUTED, 3, x=ml)
+    text(d, top + 480, "2035", f_small, MUTED, 3, right=mr)
+    text(d, top + 486,
+         f"US DOLLAR RESERVE SHARE, REFERENCE MEDIAN {first:.1f} TO {last:.1f} PERCENT",
+         f_small, MUTED, 4, center=w / 2)
+    double_rule(d, top + 536, ml, mr)
     f_rail = font(SERIF, 18)
-
-    double_rule(d, 52, ml, mr)
-
-    tracked(d, (0, 84), "THE PRIMACY PREMIUM", f_eyebrow, MUTED, track=7,
-            anchor_center=w / 2)
-    tracked(d, (0, 122), "Committee Exercise", f_title, INK, track=1,
-            anchor_center=w / 2)
-    tracked(d, (0, 232), "Two sided conditional play on the pathways question, 2026 to 2035",
-            f_sub, MUTED, anchor_center=w / 2)
-
-    draw_fan(d, (ml, 300, mr, 470))
-
-    f_year = font(SERIF, 16)
-    tracked(d, (ml, 480), "2025", f_year, MUTED, track=3)
-    yw = text_width(d, "2035", f_year, 3)
-    tracked(d, (mr - yw / S, 480), "2035", f_year, MUTED, track=3)
-
-    tracked(d, (0, 486), "CONDITIONAL FORECAST AT THE REFERENCE STANCE", f_small, MUTED,
-            track=5, anchor_center=w / 2)
-
-    double_rule(d, 536, ml, mr)
-
-    # period rail, left; byline, right
-    rail = "  ".join(["I", "II", "III", "IV", "V"])
-    tracked(d, (ml, 560), rail, f_rail, RULE, track=6)
-    byline = "ALYSSA AGARD"
-    bw = text_width(d, byline, f_rail, 6)
-    tracked(d, (mr - bw / S, 560), byline, f_rail, MUTED, track=6)
-
-    img = img.resize((w, h), Image.LANCZOS)
-    img.save(out, optimize=True)
-    print(f"wrote {out} ({w}x{h})")
+    text(d, top + 560, "I  II  III  IV  V", f_rail, RULE, 6, x=ml)
+    text(d, top + 560, "ALYSSA I. AGARD", f_rail, MUTED, 6, right=mr)
+    img.resize((w, h), Image.LANCZOS).save(HERE / out, optimize=True)
+    print(f"{out} written ({w} x {h})")
 
 
 if __name__ == "__main__":
-    variant = sys.argv[1] if len(sys.argv) > 1 else "both"
-    if variant in ("fan", "both"):
-        render(1200, 630, "social-card.png")
-    if variant in ("plate", "both"):
-        render_plate(1200, 630, "social-card-plate.png")
-    if variant in ("photo", "both"):
-        render_photo(1200, 630, "social-card-photo.png")
+    render(1200, 630, "social-card.png")
+    render(1280, 640, "social-card-github.png")

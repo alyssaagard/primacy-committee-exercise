@@ -1,219 +1,218 @@
 # Method
 
-Design and method documentation for the Committee Exercise.
+Committee Exercise, release 2.0.0. Alyssa I. Agard.
 
-A two sided conditional forecasting exercise on the pathways question, 2026 to 2035.
+## 1. Purpose
 
-Two committees commit stances sealed and simultaneously each period. Stances condition
-the forecast rather than script the outcome. Indicators publish on their real
-schedules, so each committee reads the world late and partial. Scoring is not zero sum.
+The exercise places committees in the seats of the model published as [The Primacy Premium](https://github.com/alyssaagard/primacy-premium), release 1.1.0 (commit `dc82a6d`). That model estimates how allied military expenditure and reserve currency shares respond to US and Chinese expenditure, and simulates three pathways to 2035: accretion, retrenchment, and demonstration. In the model the two principals follow assumed rates. In the exercise, committees choose those rates, and may also choose the rates of two allied tiers.
 
----
+The exercise is a conditional forecasting instrument. Its output is what the estimated model implies given the commitments made. It does not state that any path will occur.
 
-## Design
+It serves three uses:
 
-### Turn structure
+1. Teaching. Participants see which outcomes respond to expenditure decisions in the estimated model and which do not.
+2. Elicitation. When a committee holds an allied seat, its commitments are recorded beside the value of the estimated allied response equation. The record shows where human judgment departs from the equation.
+3. Calibration practice. Each committee states intervals for two quantities each period and is scored on them.
 
-Five periods mapped to the horizon: 2026 to 2027, 2028 to 2029, 2030 to 2031, 2032 to
-2033, 2034 to 2035. Each period runs commit, then resolve.
+## 2. Relation to release 1.0.0
 
-Commitment is simultaneous and sealed. Sequential play would imply reaction functions
-the project has not identified and cannot defend, so neither committee sees the
-other's stance before resolution.
+Release 1.0.0 of the exercise used its own simulation: fourteen stance parameters with coefficients set by the designer, served through a polynomial emulator, and anchored to the July 2026 data. That engine was not the estimated model and could not be reconciled with it.
 
-### Modes
+Release 2.0.0 keeps the frame of the earlier exercise and replaces its engine.
 
-| Mode | Description |
-| --- | --- |
-| Two committees, one device | Sealed handoff screens between commitments |
-| Solo as Blue | Red plays to an archetype prior |
-| Solo as Red | Blue plays a balanced program |
+| Kept from 1.0.0 | Replaced in 2.0.0 |
+|---|---|
+| Sealed simultaneous commitment | Assumed stance coefficients, replaced by the estimates of release 1.1.0 |
+| Five periods to 2035 | Polynomial emulator, replaced by the model recursion run directly |
+| Publication lags | Two sides, replaced by four seats |
+| Interval statements scored by the Winkler rule | Fixed numeric thresholds, replaced by comparison with a reference distribution |
+| Sealed parameters opened at the debrief | Stance menus, replaced by one real growth rate per period |
+| Pathway record and circulars | |
+| No winner; separate scoring axes | |
 
-Red archetypes are priors over stances, not scripts: patient accretionist,
-opportunistic demonstrator, resource constrained consolidator.
+## 3. Seats and blocks
 
-### Moves
+The model has six expenditure blocks. Four can be held by a committee.
 
-Five categories per side, three levels each. Each level is a value of a named
-parameter of the generative recursion, plus a commitment expenditure tallied at
-debrief.
+| Block | Holder |
+|---|---|
+| United States | committee or model |
+| China | committee or model |
+| NATO Europe (30 members) | committee or model |
+| Indo-Pacific allies (Japan, South Korea, Taiwan, Australia, Philippines, New Zealand, Thailand) | committee or model |
+| Hedging middle powers | model |
+| Rest of world, including Russia | model |
 
-**Blue:** force structure allocation, alliance posture, transfer policy, chokepoint
-posture, industrial mobilization.
+Expenditure is in constant 2024 US dollars from the SIPRI Military Expenditure Database. Tier totals are chain-linked over matched members, as in release 1.1.0. The reserve currency shares are run by the model in every configuration.
 
-**Red:** naval construction tempo, nuclear expansion tempo, chokepoint pressure,
-reserve diversification, arms export drive.
+## 4. Calendar
 
-**World:** blue fiscal headroom and European follow through are chosen at setup.
-Shock propensity and the red macroeconomic tailwind are drawn sealed and revealed
-only at debrief.
+The last observed expenditure year is 2025 and the last observed reserve quarter is 2026-Q2. The year 2026 is resolved by the model for every seat, because it is in progress at the first decision point.
 
-### Channels
+| Period | Years committed | Decision point | Expenditure published through | Reserves published through |
+|---|---|---|---|---|
+| I | 2027, 2028 | November 2026 | 2025 | 2026-Q2 |
+| II | 2029, 2030 | November 2028 | 2027 | 2028-Q2 |
+| III | 2031, 2032 | November 2030 | 2029 | 2030-Q2 |
+| IV | 2033, 2034 | November 2032 | 2031 | 2032-Q2 |
+| V | 2035 | November 2034 | 2033 | 2034-Q2 |
 
-| Channel | Unit | Publication lag |
-| --- | --- | --- |
-| Blue military expenditure | index, 2025 = 100 | provisional in period, final next |
-| Red military expenditure | index, 2025 = 100 | provisional in period, final next |
-| European expenditure | index, 2025 = 100 | provisional in period, final next |
-| USD reserve share | percent of allocated reserves | one period behind |
-| RMB reserve share | percent of allocated reserves | one period behind |
-| Additional war risk premium | percent of hull and machinery value | fixes in period |
-| Red arms export share | percent of world exports | one period behind |
-| Warhead ratio, red to blue deployed | ratio | one period behind |
+The lags follow the sources. SIPRI publishes a year's expenditure the following April. The IMF publishes reserve composition about one quarter late. At each decision point a committee therefore sees every other seat's expenditure up to two years back, and its own through the current year. A demonstration is public when it occurs.
 
-### Scoring
+## 5. Engine
 
-Not zero sum, and no single winner. A zero sum scoreboard would contradict the
-project's own thesis, which holds that pathway rather than endpoint drives the
-variance: two committees can both attain their conditions along one pathway and both
-fail along another.
+`engine.js` is the only implementation of the recursion. The page runs it in the browser. `reference.js` runs the same file under Node.
 
-Each side is scored on three axes:
+### 5.1 Expenditure
 
-1. **Objective attainment.** Four fixed, side specific terminal criteria.
-2. **Commitment expenditure.** Cumulative cost of the stances taken.
-3. **Interval calibration.** A Winkler interval score at eighty percent nominal
-   coverage on the war risk premium fixing, stated before each resolution. Width is
-   paid always; misses are penalized at ten times the exceedance. Lower is better.
+Annual real growth, in percent, for each block *b* in year *t*:
 
-In solo play the scripted committee states its own emulator fan as its interval.
+- United States, run by the model: pathway rate plus residual. The rate is the compound rate for 2015 to 2025 (+1.03) under accretion and demonstration, and the 1988 to 1998 rate (−3.76) under retrenchment.
+- China, run by the model: the compound rate for 2015 to 2025 (+5.50) plus residual.
+- Allied tier, run by the model: `b0 + b_us * g_US(t-1) + b_cn * g_CN(t-1) + residual + post-event term`.
+- Rest of world: mean growth over the last ten years (+6.70) plus residual.
+- Any seat held by a committee: the committed rate.
 
-### Pathway posterior
+Estimated coefficients (standard errors), 1991 to 2025:
 
-A classifier over conditioning trajectories: softmax over three linear scores on
-committed stances and the episode rate. Sealed parameters enter only at debrief. The
-posterior updates each period, so a committee that believes it is playing accretion
-can discover at period four that its choices have put most of the probability mass on
-retrenchment. This is the mechanic that carries the primary proposition.
+| Tier | Response to US growth | Response to China growth | R squared |
+|---|---|---|---|
+| Indo-Pacific allies | +0.076 (0.072) | −0.041 (0.058) | 0.04 |
+| NATO Europe | +0.279 (0.160) | −0.185 (0.130) | 0.12 |
+| Hedging middle powers | +0.194 (0.208) | +0.154 (0.124) | 0.09 |
 
----
+Residuals are the estimation residuals of the six blocks on the common sample 1993 to 2025. One sample year is drawn for each simulated year by stationary bootstrap (Politis and Romano 1994) with a mean run of five years, and its residuals are applied to all blocks together. This keeps correlation across blocks and short-run persistence.
 
-## Method
+### 5.2 Reserves
 
-### Emulator
+Quarterly. The US dollar share moves in percentage points and the renminbi share in log-odds:
 
-Two sided play at five moves across five periods is roughly 9.8 million terminal
-branches, so an enumerated decision tree is not feasible. Instead a move is a vector of
-parameter values, and the precomputed object is a response surface over the parameter
-space.
+`change = c0 + c1 * dlog(China / United States expenditure) + residual`
 
-- Design: scrambled Sobol, 4096 points over 14 parameters, scipy preferred, Latin
-  hypercube fallback if absent
-- Draws: 320 stochastic draws per design point
-- Fit: degree two polynomial response surface, least squares, on quantiles of each
-  channel at each period
-- Validation: reserved fifth of the design
+The regressor is the annual log change of the simulated expenditure ratio, applied to each quarter of the year. In release 1.1.0 the regressor is a constant per pathway; in the exercise it is computed from the realized path, which is the only link from commitments to reserves. Residuals are resampled from the estimation residuals.
 
-Held out median R squared is 0.997 overall. The weakest channel is the war risk
-premium at 0.875 median and 0.630 minimum, which is expected: it is the jump driven
-series. The full per channel table renders in the page appendix, so the error is
-disclosed to anyone playing rather than buried in the build.
+The estimated dollar coefficient is +0.93 points per unit log change (standard error 0.95, R squared 0.012). The response is weak and its sign is uncertain.
 
-Fitting the premium in log space was tested and validated worse, median R squared
-0.812 against 0.875, so the natural space fit was retained with positivity enforced by
-a clamp at render.
+### 5.3 Demonstration
 
-### Resolution
+A demonstration occurs at most once, in a year from 2028 to 2031. It repeats the one episode on record:
 
-The realized path is one seeded draw of the same generative recursion, ported to
-JavaScript from the exported constants. Fans and realizations therefore share a single
-generative process rather than being two unrelated models.
+- In the event quarter and the next, the share changes equal those observed in 2022-Q1 and 2022-Q2. Afterwards, drift shifts by the difference between mean quarterly change from 2022-Q1 and before it.
+- From the event year, each allied tier run by the model adds its measured post-2022 change in mean growth (Indo-Pacific allies +0.11 points, NATO Europe +7.11, hedging middle powers +5.14), declining linearly to zero over four years.
 
-Process parity was verified by comparing terminal quantiles from 20000 Python draws
-against 2000 JavaScript paths at the reference stance. Worst relative gap is 2.3
-percent, on the premium channel, attributable to draw counts. Every other channel is
-under 1 percent.
+The event quarter within the year is part of the sealed record.
 
-### Conditioning tiers
+## 6. Sealed record
 
-Showing a fan conditioned on the true joint stance would leak the counterpart's sealed
-move, so fans run in three tiers:
+At the start, one draw is made from the exercise seed and held until the debrief:
 
-| Screen | Conditions on |
-| --- | --- |
-| Committee move sheet | own stance held forward, counterpart and sealed at reference |
-| Shared resolution | all stances at reference, disclosing neither committee's choices |
-| Debrief | true joint record, sealed parameters revealed |
+1. A pathway, with probability one third each. A retrenchment draw applies only if the United States is run by the model. A demonstration draw applies only if China is run by the model; its year is uniform on 2028 to 2031.
+2. Coefficients for each allied tier, from the joint normal distribution with the estimated covariance.
+3. The two reserve coefficients for each currency, drawn the same way.
+4. The residual years for 2026 to 2035 and the quarterly reserve residuals.
 
-The divergence between the in period estimates and the debrief fan is the measured
-cost of the fog, which is the epistemic point of the exercise.
+The same seed and the same commitments reproduce the same exercise.
 
-### Calibration anchors
+## 7. Commitments
 
-Verified against local copies; the build script does not read raw files at runtime.
+Each period a committee commits one real growth rate, applied to every year of the period. The range is the 5th to 95th percentile of the seat's own annual real growth from 1993 to 2025, rounded outward to half a point:
 
-| Anchor | Value |
-| --- | --- |
-| US military expenditure 2025 | 929.2 bn constant 2024 USD, about 7.5 percent real decline |
-| China 2025 | 335.0 bn constant 2024 USD, about 7.4 percent real increase |
-| Central and Western Europe 2025 | 579.8 bn constant 2024 USD, about 6.0 percent real increase |
-| USD share of allocated reserves, 2025 Q4 | 56.42 percent, against 59.40 at 2021 Q4 |
-| RMB share, 2025 Q4 | 1.95 percent, off a 2.85 peak at 2021 Q4 |
-| Mideast Gulf additional war risk premium | 0.15 to 0.20 percent of hull value at baseline, about 1 percent during the 2026 episode |
-| China warheads 2025 | about 600, DoD projecting about 1500 by 2035 |
+| Seat | Range, percent |
+|---|---|
+| United States | −7.0 to +10.5 |
+| China | 0.0 to +20.0 |
+| NATO Europe | −3.5 to +11.5 |
+| Indo-Pacific allies | −1.0 to +6.0 |
 
-Episode severity is calibrated to the 2026 Gulf case, in which the premium moved
-roughly fivefold under circular JWLA-033 of 3 March 2026. Episode declarations render
-in the page as resolution circulars in the JWC register.
+A committed rate is realized exactly. It replaces the model equation and its residual for that seat. A committee holding China may also declare one demonstration in a year of the window that falls in the period.
 
-New START lapsed 4 February 2026 with no successor, so the blue deployed strategic
-denominator is stochastic rather than fixed, consistent with the design amendment
-already carried elsewhere in the project.
+## 8. Staff estimate
 
----
+Each seat paper shows a staff estimate: 400 draws of the model from the published record, given the committee's own commitment. The staff know what the committee knows: published figures, the committee's own unpublished outlays, and any demonstration already recorded. They do not know the sealed record or another committee's sheet. Every other seat is taken at its model behavior, with the three pathways at equal probability, conditioned on no demonstration having occurred so far. The staff do not update the pathway probabilities from published growth.
 
-## Reproduce
+## 9. Interval statements
 
-```bash
-python3 build_data.py    # writes payload.json
-python3 build_page.py    # writes index.html
+Each period a committee states an 80 percent interval for two quantities:
+
+1. The US dollar reserve share at the last quarter that will be published at the next decision point (2035-Q4 in period V).
+2. Combined real growth of NATO Europe and the Indo-Pacific allies in the first year of the period.
+
+Each is scored by the Winkler rule: interval width plus 10 times the distance by which the outcome falls outside. Lower is better. The intervals are prefilled with the staff 10th and 90th percentiles; a committee that leaves them unchanged receives the staff score. The staff score is reported beside each committee score.
+
+## 10. Reference distribution and objectives
+
+`reference.js` simulates the accretion pathway with every seat run by the model, 10,000 draws. The debrief reports each outcome beside the median of this distribution and its percentile within it.
+
+The exercise names no winner. Each committee is reported on three separate axes:
+
+1. Objectives, each met or not met against the reference median at 2035.
+   - United States: China to United States expenditure ratio at or below the reference; US dollar reserve share at or above it.
+   - China: the same ratio at or above the reference; renminbi reserve share at or above it.
+   - NATO Europe and Indo-Pacific allies: coalition to China expenditure ratio at or above the reference; United States share of coalition expenditure at or above it. The coalition is the United States, NATO Europe, and the Indo-Pacific allies.
+2. Cumulative own outlays, 2026 to 2035, against the reference median.
+3. Interval calibration: statements inside, mean score, and the staff mean score.
+
+The objectives are stylized interests. The second allied objective encodes the incentive to leave the burden with the guarantor, which is the standard burden-sharing result (Olson and Zeckhauser 1966). They are design assumptions and not findings of the model.
+
+## 11. Commitments against the model
+
+For each year a committee held a seat, the debrief reports the committed rate, the value of the model equation for that seat at the growth rates realized in the prior year (using the published point estimates), the deviation, and the share of the seat's historical residuals that lie below the deviation. For the two principals the equation is the ten-year rate. The table also shows the value the model would have drawn for the seat in the sealed record.
+
+For allied seats this is an elicited record of a reaction function. Release 1.1.0 does not support the allied response hypothesis at the 5 percent level (pooled one-sided p = 0.12). The record of committee play is descriptive and is not evidence on that hypothesis.
+
+## 12. Pathway record
+
+The record is classed as demonstration if a demonstration occurred. Otherwise it is classed as retrenchment if mean US real growth from 2026 is below −1.37 percent per year, the midpoint of the two pathway rates, and as accretion if not.
+
+## 13. Parity with release 1.1.0
+
+With every seat run by the model and the pathway imposed, the engine must reproduce the published 2035 medians of release 1.1.0. `reference.js` checks 27 medians (six blocks, two reserve shares, and the allied share of world expenditure, for three pathways) at 10,000 draws each and stops the build if any is outside tolerance (3 percent for levels, 0.35 points for reserve shares, 0.6 points for the allied share).
+
+Result at this release: the largest deviation is 1.02 percent for expenditure levels and 0.15 points for shares. The two implementations use different random number generators, so the difference is sampling error. The full table is in `reference.json` under `parity`.
+
+## 14. Estimated and assumed
+
+Estimated in release 1.1.0 and used unchanged: the allied response equations and their covariance; the reserve regressions and their covariance; all residual pools; the pathway rates; the 2022 episode quantities; base levels.
+
+Assumed by the exercise:
+
+- A committed rate is realized exactly.
+- The pathway probabilities are equal.
+- The commitment range is the 5th to 95th percentile of observed growth.
+- One rate governs each period.
+- The objectives in section 10.
+- Committees holding allied seats choose their own response to a demonstration; the measured post-2022 term applies only to tiers run by the model.
+- The reserve regressor is the realized annual ratio change.
+
+## 15. Limitations
+
+- The allied response equations are static, their residuals are serially correlated, and the coefficient signs are uncertain. The sealed draws carry that uncertainty; a single exercise is one draw.
+- The demonstration rests on one episode.
+- The reserve response is weak. Reserve outcomes in the exercise mostly reflect drift, residuals, and whether a demonstration occurs.
+- A committed rate has no execution error, no fiscal constraint, and no within-period adjustment.
+- Rest of world includes Russia and is not a strategic actor in the exercise.
+- The staff estimate does not learn from published growth.
+- The exercise has not been run with participants. The scoring axes and objectives have not been validated against play.
+
+## 16. Build
+
+```
+python build_data.py --model ../primacy-premium   # refresh model_inputs.json (optional)
+python build_data.py                              # payload.json
+node reference.js                                 # parity check, reference.json
+python build_social.py                            # share card
+python build_page.py                              # index.html
+python tests/playthrough.py                       # automated play to the debrief
 ```
 
-Dependencies: numpy required, scipy preferred. Build seed 20260724 throughout, so the
-same seed reproduces the same design, emulator coefficients, and sealed draws.
+`build_data.py` and `build_page.py` need Python 3 only. Refreshing `model_inputs.json` needs pandas and a checkout of the model repository. `reference.js` needs Node. `build_social.py` needs Pillow and the Liberation fonts. The test needs Playwright.
 
-Raw SIPRI and IMF files are excluded from the repository under publisher terms. The
-build scripts do not read them; anchors are hardcoded with provenance in the
-`build_data.py` header.
+## References
 
----
+Olson, M., and R. Zeckhauser. 1966. An economic theory of alliances. *Review of Economics and Statistics* 48(3): 266 to 279.
 
-## Presentation and motion
+Politis, D. N., and J. P. Romano. 1994. The stationary bootstrap. *Journal of the American Statistical Association* 89(428): 1303 to 1313.
 
-Motion is spent where the game state actually changes, and nowhere else. The
-resolution sequence is the payoff moment of each period, so it is staged: the period
-rail fills, a circular stamps in when an episode is declared, indicator fixings tick
-from their previous published values to the new ones, the reference fan redraws, the
-interval scores reveal and count, and the pathway posterior updates, with a marginal
-note when the leading pathway changes. On the commit sheet the committee estimate
-animates between stances, so the act of conditioning is visible as the fan morphs
-under the player's hand.
+Winkler, R. L. 1972. A decision-theoretic approach to interval estimation. *Journal of the American Statistical Association* 67(337): 187 to 191.
 
-Three disciplines keep this honest and in register. Every sequence is skippable: the
-proceed control is live from the first frame and completes the resolution instantly,
-so the animation is texture rather than gate. Everything respects
-prefers-reduced-motion, under which values appear at their final states with no
-transforms. And nothing animated is decorative in the pejorative sense: each moving
-element is a state change in the record, in the learned society register the project
-already uses, double rules, small caps, tabular numerals, and the circular stamp.
-
-## Limitations and next steps
-
-**Horizon constant conditioning.** The emulator conditions on a single stance vector
-per playthrough. A stance path is aggregated by averaging commitments to date with the
-current stance held forward. A time varying emulator is the natural extension and would
-let a mid game reversal register properly in the fan.
-
-**Placeholder constants.** The generative constants are a transparent placeholder
-layer. When the calibration module exposes its transfer coefficients as addressable
-parameters, they swap into the constants block of `build_data.py` and
-everything downstream regenerates unchanged.
-
-**Archetypes are priors, not reaction functions.** A scripted committee does not read
-the indicator board. Indicator conditioned reaction functions are the next mechanic,
-and a set of Blue archetypes would complete solo play from the Red seat.
-
-**Tripwire scoring against live data.** The terminal criteria are checked against
-simulated outcomes. Because they are drawn from the project's falsification tripwires,
-they can also be re-scored annually as SIPRI and COFER actually publish, which would
-turn a past playthrough into a dated, falsifiable forecast record.
+Data sources and their citation requirements are listed in `REFERENCES.md` of the model repository.
