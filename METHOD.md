@@ -4,7 +4,7 @@ Committee Exercise, release 2.0.0. Alyssa I. Agard.
 
 ## 1. Purpose
 
-The exercise places committees in the seats of the model published as [The Primacy Premium](https://github.com/alyssaagard/primacy-premium), release 1.1.0 (commit `dc82a6d`). That model estimates how allied military expenditure and reserve currency shares respond to US and Chinese expenditure, and simulates three pathways to 2035: accretion, retrenchment, and demonstration. In the model the two principals follow assumed rates. In the exercise, committees choose those rates, and may also choose the rates of two allied tiers.
+The exercise places committees in the seats of the model published as [The Primacy Premium](https://github.com/alyssaagard/primacy-premium), release 1.1.0 (commit `7099dd1`). That model estimates how allied military expenditure and reserve currency shares respond to US and Chinese expenditure, and simulates three pathways to 2035: accretion, retrenchment, and demonstration. In the model the two principals follow assumed rates. In the exercise, committees choose those rates, and may also choose the rates of two allied tiers.
 
 The exercise is a conditional forecasting instrument. Its output is what the estimated model implies given the commitments made. It does not state that any path will occur.
 
@@ -200,12 +200,12 @@ Assumed by the exercise:
 python build_data.py --model ../primacy-premium   # refresh model_inputs.json (optional)
 python build_data.py                              # payload.json
 node reference.js                                 # parity check, reference.json
-python build_social.py                            # share card
+python build_social.py                            # share image
 python build_page.py                              # index.html
 python tests/playthrough.py                       # automated play to the debrief
 ```
 
-`build_data.py` and `build_page.py` need Python 3 only. Refreshing `model_inputs.json` needs pandas and a checkout of the model repository. `reference.js` needs Node. `build_social.py` needs Pillow and the Liberation fonts. The test needs Playwright.
+`build_data.py` and `build_page.py` need Python 3 only. Refreshing `model_inputs.json` needs pandas and a checkout of the model repository. `reference.js` needs Node. `build_social.py` needs Pillow. The test needs Playwright.
 
 ## References
 

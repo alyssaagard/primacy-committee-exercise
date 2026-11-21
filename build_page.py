@@ -17,7 +17,7 @@ import os
 from pathlib import Path
 
 SITE_URL = "https://alyssaagard.github.io/primacy-committee-exercise"
-SOCIAL_CARD = "social-card.png"
+SOCIAL_CARD = "social-card-photo.jpg"
 
 HERE = Path(__file__).resolve().parent
 TOKENS = {

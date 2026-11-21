@@ -40,9 +40,9 @@ Coefficients, covariance matrices, residuals, pathway rates, and the 2022 episod
 | `build_data.py` | Reads model outputs into `model_inputs.json`; writes `payload.json`. |
 | `reference.js` | Parity check against release 1.1.0; writes `reference.json`. |
 | `build_page.py` | Assembles `index.html`. |
-| `build_social.py` | Draws the share card from `reference.json`. |
+| `build_social.py` | Renders the share image from `social-plate-source.jpg`. |
 | `tests/playthrough.py` | Plays four seat configurations to the debrief; fails on any page error. |
-| `model_inputs.json` | Quantities copied from the model at commit `dc82a6d`. |
+| `model_inputs.json` | Quantities copied from the model at commit `7099dd1`. |
 | `METHOD.md` | Full method, limitations, and build instructions. |
 
 ## Build
