@@ -16,19 +16,19 @@ The exercise is a conditional forecasting instrument. It reports what the estima
 
 ## Relation to the model
 
-The engine is the model's recursion, run in the browser. With every seat run by the model it reproduces the published 2035 medians of release 1.1.0 for all three pathways. Across 27 medians at 10,000 draws, the largest deviation is 1.02 percent for expenditure levels and 0.15 points for shares, which is sampling error from a different random number generator. The build fails if any median is outside tolerance.
+The engine is the model's recursion, run in the browser. With every seat run by the model it reproduces the published 2035 medians of release 1.1.0 for all three pathways. Across 27 medians at 50,000 draws, the largest deviation is 0.97 percent for expenditure levels and 0.05 points for shares, which is sampling error. The build fails if any median is outside tolerance.
 
-Release 1.0.0 of this exercise used a separate simulation with coefficients set by the designer. Release 2.0.0 keeps its frame (sealed commitment, five periods, publication lags, scored intervals, a sealed record opened at the debrief, no winner) and replaces that engine with the estimated model. See `METHOD.md`, section 2.
+Release 1.0.0 of this exercise used a separate simulation with coefficients set by the designer. Release 2.0.0 keeps its frame (sealed commitment, five periods, publication lags, scored intervals, a sealed record opened at the debrief, no ranking of seats) and replaces that engine with the estimated model. See `METHOD.md`, section 2.
 
 ## What a session produces
 
 - A resolution after each period: newly published figures, any circular, and interval scores.
-- A debrief: the sealed pathway and coefficient draws, every block's path against a reference, each committee's objectives, outlays, and calibration, and each commitment set against the model equation for that seat.
+- A debrief: the sealed pathway and coefficient draws, every block's path against a reference, each committee's outcome (favorable, mixed, or unfavorable) against its objectives and resource limit, interval calibration, and each commitment set against the model equation for that seat.
 - A downloadable record in JSON, with commitments, realized paths, sealed draws, and scores.
 
 ## Estimated and assumed
 
-Coefficients, covariance matrices, residuals, pathway rates, and the 2022 episode quantities come from release 1.1.0 and are used unchanged. The seats, the commitment range, the equal pathway probabilities, the objectives, and the rule that a committed rate is realized exactly are assumptions of the exercise. `METHOD.md`, section 14, lists both.
+Coefficients, covariance matrices, residuals, pathway rates, and the 2022 episode quantities come from release 1.1.0 and are used unchanged. The seats, the commitment range, the equal pathway probabilities, the goals, objectives, and resource limits, and the rule that a committed rate is realized exactly are assumptions of the exercise. `METHOD.md`, section 14, lists both.
 
 ## Repository
 

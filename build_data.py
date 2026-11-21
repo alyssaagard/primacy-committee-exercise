@@ -47,8 +47,9 @@ BOUND_QUANTILES = (0.05, 0.95)   # commitment range, own observed growth
 BOUND_SAMPLE = (1993, 2025)
 STEP = 0.5                       # commitment increment, percentage points
 COVERAGE = 0.80                  # nominal coverage of stated intervals
-STAFF_DRAWS = 400                # draws behind each staff estimate
-REFERENCE_DRAWS = 10_000
+STAFF_DRAWS = 2_000              # draws behind each staff estimate
+REFERENCE_DRAWS = 50_000
+RESOURCE_QUANTILE = 0.75         # resource limit, reference distribution
 HISTORY_FROM = 2010
 
 
@@ -186,49 +187,42 @@ def round_out(lo: float, hi: float) -> list:
 def design(m: dict) -> dict:
     rates = m["rates"]
     us_mid = (rates["us_trend"] + rates["us_contraction"]) / 2
+    ratio = {"measure": "cn_us", "dp": 3,
+             "label": "China to United States expenditure ratio, 2035"}
+    coal = {"measure": "coalition_cn", "op": ">=", "dp": 2,
+            "label": "Coalition to China expenditure ratio, 2035"}
+    burden = {"measure": "us_share_coalition", "op": ">=", "dp": 1,
+              "label": "United States share of coalition expenditure, "
+                       "2035, percent"}
+    allied_goal = ("Keep the coalition's expenditure margin over China "
+                   "while the United States continues to carry its share.")
     seats = {
         "United States": {
-            "short": "United States", "code": "us",
+            "code": "us",
+            "goal": "Retain the expenditure margin over China and the "
+                    "reserve position of the dollar.",
             "refs": [["Ten-year rate", rates["us_trend"]],
                      ["1988 to 1998 rate", rates["us_contraction"]],
                      ["No real change", 0.0]],
             "objectives": [
-                {"measure": "cn_us", "op": "<=",
-                 "label": "China to United States expenditure ratio at or "
-                          "below the reference median"},
-                {"measure": "usd", "op": ">=",
-                 "label": "US dollar reserve share at or above the "
-                          "reference median"}]},
+                dict(ratio, op="<="),
+                {"measure": "usd", "op": ">=", "dp": 2,
+                 "label": "US dollar reserve share, 2035-Q4, percent"}]},
         "China": {
-            "short": "China", "code": "cn",
+            "code": "cn",
+            "goal": "Close the expenditure gap with the United States and "
+                    "raise the reserve role of the renminbi.",
             "refs": [["Ten-year rate", rates["cn_trend"]],
                      ["2025 rate", rates["cn_last"]],
                      ["No real change", 0.0]],
             "objectives": [
-                {"measure": "cn_us", "op": ">=",
-                 "label": "China to United States expenditure ratio at or "
-                          "above the reference median"},
-                {"measure": "cny", "op": ">=",
-                 "label": "Renminbi reserve share at or above the "
-                          "reference median"}]},
-        "NATO Europe": {
-            "short": "NATO Europe", "code": "eu", "refs": [],
-            "objectives": [
-                {"measure": "coalition_cn", "op": ">=",
-                 "label": "Coalition to China expenditure ratio at or above "
-                          "the reference median"},
-                {"measure": "us_share_coalition", "op": ">=",
-                 "label": "United States share of coalition expenditure at "
-                          "or above the reference median"}]},
-        "Indo-Pacific allies": {
-            "short": "Indo-Pacific allies", "code": "ip", "refs": [],
-            "objectives": [
-                {"measure": "coalition_cn", "op": ">=",
-                 "label": "Coalition to China expenditure ratio at or above "
-                          "the reference median"},
-                {"measure": "us_share_coalition", "op": ">=",
-                 "label": "United States share of coalition expenditure at "
-                          "or above the reference median"}]},
+                dict(ratio, op=">="),
+                {"measure": "cny", "op": ">=", "dp": 2,
+                 "label": "Renminbi reserve share, 2035-Q4, percent"}]},
+        "NATO Europe": {"code": "eu", "goal": allied_goal, "refs": [],
+                        "objectives": [coal, burden]},
+        "Indo-Pacific allies": {"code": "ip", "goal": allied_goal, "refs": [],
+                                "objectives": [coal, burden]},
     }
     hist = m["history"]
     for s, d in seats.items():
@@ -247,7 +241,7 @@ def design(m: dict) -> dict:
         "seats": seats, "seat_order": SEATS,
         "start_year": START_YEAR, "horizon": PERIODS[-1]["years"][-1],
         "periods": PERIODS, "step": STEP,
-        "coverage": COVERAGE,
+        "coverage": COVERAGE, "resource_quantile": RESOURCE_QUANTILE,
         "staff_draws": STAFF_DRAWS, "reference_draws": REFERENCE_DRAWS,
         "pathway_prior": {p: round(1 / 3, 6) for p in PATHWAYS},
         "us_midpoint": round(us_mid, 4),

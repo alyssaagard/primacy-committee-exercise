@@ -1,6 +1,6 @@
 # Method
 
-Committee Exercise, release 2.0.0. Alyssa I. Agard.
+Committee Exercise, release 2.1.0. Alyssa I. Agard.
 
 ## 1. Purpose
 
@@ -28,7 +28,7 @@ Release 2.0.0 keeps the frame of the earlier exercise and replaces its engine.
 | Interval statements scored by the Winkler rule | Fixed numeric thresholds, replaced by comparison with a reference distribution |
 | Sealed parameters opened at the debrief | Stance menus, replaced by one real growth rate per period |
 | Pathway record and circulars | |
-| No winner; separate scoring axes | |
+| Outcomes assessed seat by seat, with no ranking | |
 
 ## 3. Seats and blocks
 
@@ -89,7 +89,7 @@ Quarterly. The US dollar share moves in percentage points and the renminbi share
 
 `change = c0 + c1 * dlog(China / United States expenditure) + residual`
 
-The regressor is the annual log change of the simulated expenditure ratio, applied to each quarter of the year. In release 1.1.0 the regressor is a constant per pathway; in the exercise it is computed from the realized path, which is the only link from commitments to reserves. Residuals are resampled from the estimation residuals.
+The regressor is defined as it was estimated in release 1.1.0: the year-on-year change of the log ratio, with the annual ratio placed at year end and interpolated linearly in logs. For quarter *k* of year *t* this equals `(1 - k/4) * d(t-1) + (k/4) * d(t)`, where `d(t)` is the annual log change of the simulated ratio. The 2025 change enters the 2026 quarters through this formula. In the pathway simulation of release 1.1.0 the regressor is a constant per pathway; in the exercise it is computed from the realized path, which is the only link from commitments to reserves. Residuals are resampled from the estimation residuals.
 
 The estimated dollar coefficient is +0.93 points per unit log change (standard error 0.95, R squared 0.012). The response is weak and its sign is uncertain.
 
@@ -128,7 +128,12 @@ A committed rate is realized exactly. It replaces the model equation and its res
 
 ## 8. Staff estimate
 
-Each seat paper shows a staff estimate: 400 draws of the model from the published record, given the committee's own commitment. The staff know what the committee knows: published figures, the committee's own unpublished outlays, and any demonstration already recorded. They do not know the sealed record or another committee's sheet. Every other seat is taken at its model behavior, with the three pathways at equal probability, conditioned on no demonstration having occurred so far. The staff do not update the pathway probabilities from published growth.
+Each seat paper shows a staff estimate: 2,000 draws of the model from the published record, given the committee's own commitment. The staff know what the committee knows: published figures, the committee's own unpublished outlays, and any demonstration already recorded. They do not know the sealed record or another committee's sheet. Every other seat is taken at its model behavior.
+
+Pathway probabilities start at one third each and are revised at each decision point:
+
+- On published US growth. Each published year is treated as an independent normal draw around the pathway rate, with the standard deviation of the US residual sample. Accretion and demonstration share a rate and split their joint probability equally.
+- On demonstrations. If none has occurred, draws that place one in a past year are rejected.
 
 ## 9. Interval statements
 
@@ -139,20 +144,30 @@ Each period a committee states an 80 percent interval for two quantities:
 
 Each is scored by the Winkler rule: interval width plus 10 times the distance by which the outcome falls outside. Lower is better. The intervals are prefilled with the staff 10th and 90th percentiles; a committee that leaves them unchanged receives the staff score. The staff score is reported beside each committee score.
 
-## 10. Reference distribution and objectives
+## 10. Goals, objectives, and favorable outcomes
 
-`reference.js` simulates the accretion pathway with every seat run by the model, 10,000 draws. The debrief reports each outcome beside the median of this distribution and its percentile within it.
+`reference.js` simulates the accretion pathway with every seat run by the model, 50,000 draws. This is the reference distribution.
 
-The exercise names no winner. Each committee is reported on three separate axes:
+Each seat has one goal, two objectives measured at 2035, and one resource limit. Each objective threshold is the reference median. The resource limit is the 75th percentile of the seat's cumulative outlays, 2026 to 2035, in the reference distribution.
 
-1. Objectives, each met or not met against the reference median at 2035.
-   - United States: China to United States expenditure ratio at or below the reference; US dollar reserve share at or above it.
-   - China: the same ratio at or above the reference; renminbi reserve share at or above it.
-   - NATO Europe and Indo-Pacific allies: coalition to China expenditure ratio at or above the reference; United States share of coalition expenditure at or above it. The coalition is the United States, NATO Europe, and the Indo-Pacific allies.
-2. Cumulative own outlays, 2026 to 2035, against the reference median.
-3. Interval calibration: statements inside, mean score, and the staff mean score.
+| Seat | Goal | Objective 1 | Objective 2 | Resource limit, USD bn |
+|---|---|---|---|---|
+| United States | Retain the expenditure margin over China and the reserve position of the dollar. | China to United States expenditure ratio at or below 0.553 | US dollar reserve share, 2035-Q4, at or above 50.36 percent | 10,944.8 |
+| China | Close the expenditure gap with the United States and raise the reserve role of the renminbi. | China to United States expenditure ratio at or above 0.553 | Renminbi reserve share, 2035-Q4, at or above 4.59 percent | 5,188.2 |
+| NATO Europe | Keep the coalition's expenditure margin over China while the United States continues to carry its share. | Coalition to China expenditure ratio at or above 3.31 | United States share of coalition expenditure at or above 53.1 percent | 6,617.7 |
+| Indo-Pacific allies | As NATO Europe. | As NATO Europe. | As NATO Europe. | 2,069.7 |
 
-The objectives are stylized interests. The second allied objective encodes the incentive to leave the burden with the guarantor, which is the standard burden-sharing result (Olson and Zeckhauser 1966). They are design assumptions and not findings of the model.
+The coalition is the United States, NATO Europe, and the Indo-Pacific allies.
+
+Outcome for a seat:
+
+- Favorable: every objective met and cumulative outlays within the resource limit.
+- Mixed: at least one objective met.
+- Unfavorable: no objective met.
+
+Outcomes are assessed seat by seat and are not ranked against each other. The objectives of the two principals on the expenditure ratio are opposed; the allied objectives are not opposed to either. Interval calibration (section 9) is reported separately and does not enter the outcome.
+
+The thresholds are computed from the model. The choice of goals, objectives, and the 75th percentile limit is a design assumption. The second allied objective encodes the incentive to leave the burden with the guarantor, which is the standard burden-sharing result (Olson and Zeckhauser 1966). The debrief also reports each measure's percentile in the reference distribution.
 
 ## 11. Commitments against the model
 
@@ -166,9 +181,9 @@ The record is classed as demonstration if a demonstration occurred. Otherwise it
 
 ## 13. Parity with release 1.1.0
 
-With every seat run by the model and the pathway imposed, the engine must reproduce the published 2035 medians of release 1.1.0. `reference.js` checks 27 medians (six blocks, two reserve shares, and the allied share of world expenditure, for three pathways) at 10,000 draws each and stops the build if any is outside tolerance (3 percent for levels, 0.35 points for reserve shares, 0.6 points for the allied share).
+With every seat run by the model and the pathway imposed, the engine must reproduce the published 2035 medians of release 1.1.0. `reference.js` checks 27 medians (six blocks, two reserve shares, and the allied share of world expenditure, for three pathways) at 50,000 draws each and stops the build if any is outside tolerance (3 percent for levels, 0.35 points for reserve shares, 0.6 points for the allied share).
 
-Result at this release: the largest deviation is 1.02 percent for expenditure levels and 0.15 points for shares. The two implementations use different random number generators, so the difference is sampling error. The full table is in `reference.json` under `parity`.
+Result at this release: the largest deviation is 0.97 percent for expenditure levels and 0.05 points for shares. The two implementations use different random number generators and the published medians rest on 10,000 draws, so the difference is sampling error. The carry-over of the 2025 ratio change into 2026 (section 5.2) is within the same tolerance. The full table is in `reference.json` under `parity`.
 
 ## 14. Estimated and assumed
 
@@ -180,9 +195,9 @@ Assumed by the exercise:
 - The pathway probabilities are equal.
 - The commitment range is the 5th to 95th percentile of observed growth.
 - One rate governs each period.
-- The objectives in section 10.
+- The goals, objectives, and resource limits in section 10.
 - Committees holding allied seats choose their own response to a demonstration; the measured post-2022 term applies only to tiers run by the model.
-- The reserve regressor is the realized annual ratio change.
+- The reserve regressor is computed from the realized path.
 
 ## 15. Limitations
 
@@ -191,7 +206,7 @@ Assumed by the exercise:
 - The reserve response is weak. Reserve outcomes in the exercise mostly reflect drift, residuals, and whether a demonstration occurs.
 - A committed rate has no execution error, no fiscal constraint, and no within-period adjustment.
 - Rest of world includes Russia and is not a strategic actor in the exercise.
-- The staff estimate does not learn from published growth.
+- The staff revision of pathway probabilities treats published years as independent, which the residuals are not.
 - The exercise has not been run with participants. The scoring axes and objectives have not been validated against play.
 
 ## 16. Build

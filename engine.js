@@ -20,7 +20,11 @@
  * Reserves (quarterly). The dollar share moves in percentage points and the
  * renminbi share in log-odds:
  *   change = c0 + c1 * dlog(China / United States expenditure) + residual
- * where the regressor is the annual log change of the simulated ratio. In
+ * The regressor is defined as it was estimated: the year-on-year change of
+ * the log ratio, with the annual ratio interpolated linearly in logs between
+ * year ends. For quarter k of year t this is
+ *   (1 - k/4) * d(t-1) + (k/4) * d(t),
+ * where d(t) is the annual log change of the simulated ratio. In
  * the two quarters of a demonstration the change equals the 2022-Q1 and
  * 2022-Q2 observations, and drift shifts afterwards by the post-2022 change
  * in mean drift.
@@ -111,7 +115,9 @@
     m.blocks.forEach(function (b) { lvl[b] = m.base[b]; });
     return { year: m.base_year, lvl: lvl, usPrev: m.rates.us_last,
              cnPrev: m.rates.cn_last, zU: m.reserve.usd0,
-             zC: logit(m.reserve.cny0), q: -1, eventYear: 0, eventQ: 0 };
+             zC: logit(m.reserve.cny0), q: -1, eventYear: 0, eventQ: 0,
+             xPrev: Math.log((1 + m.rates.cn_last / 100)
+                             / (1 + m.rates.us_last / 100)) };
   }
 
   function copyState(s) {
@@ -128,6 +134,9 @@
    * opt.force                  impose a pathway (reference runs)
    * opt.noEventThrough         condition on no demonstration through a year
    * opt.eventKnown             a demonstration has already occurred
+   * opt.prior                  probabilities of accretion and retrenchment
+   *                            (the remainder is demonstration); default
+   *                            one third each
    */
   function drawWorld(P, rng, opt) {
     opt = opt || {};
@@ -135,8 +144,10 @@
     var e0 = m.event_years[0], e1 = m.event_years[1];
     for (;;) {
       var u = rng.u();
-      W.path = opt.force || (u < 1 / 3 ? "accretion"
-                             : u < 2 / 3 ? "retrenchment" : "demonstration");
+      var pa = opt.prior ? opt.prior[0] : 1 / 3;
+      var pr = opt.prior ? opt.prior[1] : 1 / 3;
+      W.path = opt.force || (u < pa ? "accretion"
+                             : u < pa + pr ? "retrenchment" : "demonstration");
       W.eventYear = e0 + rng.int(e1 - e0 + 1);
       W.eventQuarter = 1 + rng.int(4);
       if (W.path !== "demonstration" || opt.cnModel === false || opt.eventKnown) {
@@ -207,7 +218,8 @@
     for (var q = 1; q <= 4; q++) {
       var qi = qIndex(y, q);
       if (qi < 0 || qi <= s.q) continue;
-      var dU = W.usd[0] + W.usd[1] * x, dC = W.cny[0] + W.cny[1] * x;
+      var xq = (1 - q / 4) * s.xPrev + (q / 4) * x;
+      var dU = W.usd[0] + W.usd[1] * xq, dC = W.cny[0] + W.cny[1] * xq;
       if (s.eventYear) {
         var k = qi - s.eventQ;
         if (k >= 0 && k < r.usd_jumps.length) {
@@ -221,7 +233,7 @@
       s.q = qi;
       quarters.push({ qi: qi, usd: s.zU, cny: expit(s.zC) });
     }
-    s.year = y; s.usPrev = g[US]; s.cnPrev = g[CN];
+    s.year = y; s.usPrev = g[US]; s.cnPrev = g[CN]; s.xPrev = x;
     return { state: s, rec: { year: y, g: g, model: model, lagUS: s0.usPrev,
                               lagCN: s0.cnPrev, quarters: quarters, x: x } };
   }
@@ -284,6 +296,7 @@
     for (qi = o.start.q + 1; qi <= o.usdQ; qi++) path[qi] = [];
     for (i = 0; i < n; i++) {
       var W = drawWorld(P, rng, { usModel: o.usModel, cnModel: o.cnModel,
+                                  prior: o.prior,
                                   noEventThrough: o.noEventThrough,
                                   eventKnown: !!o.start.eventYear });
       var s = copyState(o.start);
@@ -316,6 +329,25 @@
     return { fan: fan, usd: q3(su), growth: q3(sg), ratio: q3(sr), n: n };
   }
 
+  /*
+   * Staff probabilities of the US pathway rate given published US growth.
+   * Each published year is treated as an independent normal draw around the
+   * pathway rate with the standard deviation of the US residual sample.
+   * Returns [P(accretion), P(retrenchment)]; the remainder is demonstration,
+   * which shares the accretion rate.
+   */
+  function pathwayPosterior(P, growth) {
+    var m = P.m, c = P.col[US], rows = m.resid.rows, ss = 0, i;
+    for (i = 0; i < rows.length; i++) ss += rows[i][c] * rows[i][c];
+    var sd = Math.sqrt(ss / (rows.length - 1)), la = 0, lr = 0;
+    for (i = 0; i < growth.length; i++) {
+      la -= Math.pow((growth[i] - m.rates.us_trend) / sd, 2) / 2;
+      lr -= Math.pow((growth[i] - m.rates.us_contraction) / sd, 2) / 2;
+    }
+    var mx = Math.max(la, lr), wa = 2 * Math.exp(la - mx), wr = Math.exp(lr - mx);
+    return [wa / (wa + wr) / 2, wr / (wa + wr)];
+  }
+
   /* ------------------------------------------------------------ scoring */
   /* Winkler interval score: width plus (2 / alpha) times any exceedance. */
   function winkler(lo, hi, x, coverage) {
@@ -335,7 +367,7 @@
     Y0: Y0, Rng: Rng, prepare: prepare, initialState: initialState,
     copyState: copyState, drawWorld: drawWorld, step: step,
     measures: measures, estimate: estimate, winkler: winkler,
-    classify: classify, quantile: quantile, sortNum: sortNum,
+    classify: classify, pathwayPosterior: pathwayPosterior, quantile: quantile, sortNum: sortNum,
     percentileOf: percentileOf, residualPercentile: residualPercentile,
     qIndex: qIndex, qLabel: qLabel, expit: expit, logit: logit
   };

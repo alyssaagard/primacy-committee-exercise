@@ -220,7 +220,11 @@
  * Reserves (quarterly). The dollar share moves in percentage points and the
  * renminbi share in log-odds:
  *   change = c0 + c1 * dlog(China / United States expenditure) + residual
- * where the regressor is the annual log change of the simulated ratio. In
+ * The regressor is defined as it was estimated: the year-on-year change of
+ * the log ratio, with the annual ratio interpolated linearly in logs between
+ * year ends. For quarter k of year t this is
+ *   (1 - k/4) * d(t-1) + (k/4) * d(t),
+ * where d(t) is the annual log change of the simulated ratio. In
  * the two quarters of a demonstration the change equals the 2022-Q1 and
  * 2022-Q2 observations, and drift shifts afterwards by the post-2022 change
  * in mean drift.
@@ -311,7 +315,9 @@
     m.blocks.forEach(function (b) { lvl[b] = m.base[b]; });
     return { year: m.base_year, lvl: lvl, usPrev: m.rates.us_last,
              cnPrev: m.rates.cn_last, zU: m.reserve.usd0,
-             zC: logit(m.reserve.cny0), q: -1, eventYear: 0, eventQ: 0 };
+             zC: logit(m.reserve.cny0), q: -1, eventYear: 0, eventQ: 0,
+             xPrev: Math.log((1 + m.rates.cn_last / 100)
+                             / (1 + m.rates.us_last / 100)) };
   }
 
   function copyState(s) {
@@ -328,6 +334,9 @@
    * opt.force                  impose a pathway (reference runs)
    * opt.noEventThrough         condition on no demonstration through a year
    * opt.eventKnown             a demonstration has already occurred
+   * opt.prior                  probabilities of accretion and retrenchment
+   *                            (the remainder is demonstration); default
+   *                            one third each
    */
   function drawWorld(P, rng, opt) {
     opt = opt || {};
@@ -335,8 +344,10 @@
     var e0 = m.event_years[0], e1 = m.event_years[1];
     for (;;) {
       var u = rng.u();
-      W.path = opt.force || (u < 1 / 3 ? "accretion"
-                             : u < 2 / 3 ? "retrenchment" : "demonstration");
+      var pa = opt.prior ? opt.prior[0] : 1 / 3;
+      var pr = opt.prior ? opt.prior[1] : 1 / 3;
+      W.path = opt.force || (u < pa ? "accretion"
+                             : u < pa + pr ? "retrenchment" : "demonstration");
       W.eventYear = e0 + rng.int(e1 - e0 + 1);
       W.eventQuarter = 1 + rng.int(4);
       if (W.path !== "demonstration" || opt.cnModel === false || opt.eventKnown) {
@@ -407,7 +418,8 @@
     for (var q = 1; q <= 4; q++) {
       var qi = qIndex(y, q);
       if (qi < 0 || qi <= s.q) continue;
-      var dU = W.usd[0] + W.usd[1] * x, dC = W.cny[0] + W.cny[1] * x;
+      var xq = (1 - q / 4) * s.xPrev + (q / 4) * x;
+      var dU = W.usd[0] + W.usd[1] * xq, dC = W.cny[0] + W.cny[1] * xq;
       if (s.eventYear) {
         var k = qi - s.eventQ;
         if (k >= 0 && k < r.usd_jumps.length) {
@@ -421,7 +433,7 @@
       s.q = qi;
       quarters.push({ qi: qi, usd: s.zU, cny: expit(s.zC) });
     }
-    s.year = y; s.usPrev = g[US]; s.cnPrev = g[CN];
+    s.year = y; s.usPrev = g[US]; s.cnPrev = g[CN]; s.xPrev = x;
     return { state: s, rec: { year: y, g: g, model: model, lagUS: s0.usPrev,
                               lagCN: s0.cnPrev, quarters: quarters, x: x } };
   }
@@ -484,6 +496,7 @@
     for (qi = o.start.q + 1; qi <= o.usdQ; qi++) path[qi] = [];
     for (i = 0; i < n; i++) {
       var W = drawWorld(P, rng, { usModel: o.usModel, cnModel: o.cnModel,
+                                  prior: o.prior,
                                   noEventThrough: o.noEventThrough,
                                   eventKnown: !!o.start.eventYear });
       var s = copyState(o.start);
@@ -516,6 +529,25 @@
     return { fan: fan, usd: q3(su), growth: q3(sg), ratio: q3(sr), n: n };
   }
 
+  /*
+   * Staff probabilities of the US pathway rate given published US growth.
+   * Each published year is treated as an independent normal draw around the
+   * pathway rate with the standard deviation of the US residual sample.
+   * Returns [P(accretion), P(retrenchment)]; the remainder is demonstration,
+   * which shares the accretion rate.
+   */
+  function pathwayPosterior(P, growth) {
+    var m = P.m, c = P.col[US], rows = m.resid.rows, ss = 0, i;
+    for (i = 0; i < rows.length; i++) ss += rows[i][c] * rows[i][c];
+    var sd = Math.sqrt(ss / (rows.length - 1)), la = 0, lr = 0;
+    for (i = 0; i < growth.length; i++) {
+      la -= Math.pow((growth[i] - m.rates.us_trend) / sd, 2) / 2;
+      lr -= Math.pow((growth[i] - m.rates.us_contraction) / sd, 2) / 2;
+    }
+    var mx = Math.max(la, lr), wa = 2 * Math.exp(la - mx), wr = Math.exp(lr - mx);
+    return [wa / (wa + wr) / 2, wr / (wa + wr)];
+  }
+
   /* ------------------------------------------------------------ scoring */
   /* Winkler interval score: width plus (2 / alpha) times any exceedance. */
   function winkler(lo, hi, x, coverage) {
@@ -535,15 +567,15 @@
     Y0: Y0, Rng: Rng, prepare: prepare, initialState: initialState,
     copyState: copyState, drawWorld: drawWorld, step: step,
     measures: measures, estimate: estimate, winkler: winkler,
-    classify: classify, quantile: quantile, sortNum: sortNum,
+    classify: classify, pathwayPosterior: pathwayPosterior, quantile: quantile, sortNum: sortNum,
     percentileOf: percentileOf, residualPercentile: residualPercentile,
     qIndex: qIndex, qLabel: qLabel, expit: expit, logit: logit
   };
 })(typeof module !== "undefined" && module.exports ? module.exports : this);</script>
 <script>
 "use strict";
-const PAYLOAD = {"meta":{"title":"Committee Exercise","series":"The Primacy Premium","author":"Alyssa I. Agard","license":"CC BY-NC 4.0","seed":20260724,"built":"2026-11-21"},"model":{"source":{"repository":"https://github.com/alyssaagard/primacy-premium","version":"1.1.0","commit":"7099dd148424c25f56c5d5fcfee2764c28b28d15","built":"2026-11-21"},"seed":20260724,"blocks":["United States","China","Indo-Pacific allies","NATO Europe","Hedging middle powers","Rest of world"],"allied":["Indo-Pacific allies","NATO Europe","Hedging middle powers"],"base_year":2025,"base":{"United States":929162.9,"China":335017.6,"Indo-Pacific allies":175704.1,"NATO Europe":554250.5,"Hedging middle powers":249051.9,"Rest of world":528107.2},"history":{"years":[2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025],"levels":{"United States":[1061674.3,1049103.0,990830.7,914617.2,858357.1,838865.1,836290.9,827674.3,852585.0,901032.1,943446.6,933334.5,922552.5,943032.8,1004901.0,929162.9],"China":[131535.8,141205.8,155714.1,168374.6,181814.4,196087.6,207375.4,220129.3,233023.7,244376.0,255894.6,262558.7,274158.2,292220.8,311900.4,335017.6],"Indo-Pacific allies":[113605.1,113818.3,113929.9,114318.4,117882.0,123562.7,127275.6,129051.8,132542.5,139078.4,143483.8,151712.8,149386.2,156118.0,165328.0,175704.1],"NATO Europe":[320414.8,309426.4,304635.0,294426.6,292687.3,296530.0,304291.1,312880.7,327469.0,344013.2,359718.3,371934.3,383696.7,417732.8,479505.5,554250.5],"Hedging middle powers":[170355.0,173467.9,182658.0,199408.6,212991.1,222243.3,198363.7,213708.6,219582.2,214655.1,211581.8,206326.8,216250.5,226125.1,230230.9,249051.9],"Rest of world":[218636.3,228932.6,248271.4,256918.7,272470.3,283621.3,288155.2,279479.4,279418.9,288415.2,295619.0,301914.9,353294.5,418175.1,500441.8,528107.2]},"growth":{"United States":[2.859,-1.184,-5.554,-7.692,-6.151,-2.271,-0.307,-1.03,3.01,5.682,4.707,-1.072,-1.155,2.22,6.561,-7.537],"China":[4.925,7.352,10.275,8.131,7.982,7.85,5.757,6.15,5.858,4.872,4.714,2.604,4.418,6.588,6.734,7.412],"Indo-Pacific allies":[0.541,0.188,0.098,0.341,3.117,4.819,3.005,1.396,2.705,4.931,3.168,5.735,-1.534,4.506,5.899,6.276],"NATO Europe":[-2.523,-3.429,-1.548,-3.351,-0.591,1.313,2.617,2.823,4.663,5.052,4.565,3.396,3.162,8.871,14.788,15.588],"Hedging middle powers":[5.028,1.827,5.298,9.17,6.811,4.344,-10.745,7.736,2.748,-2.244,-1.432,-2.484,4.81,4.566,1.816,8.175],"Rest of world":[-0.056,4.709,8.447,3.483,6.053,4.093,1.599,-3.011,-0.022,3.22,2.498,2.13,17.018,18.364,19.673,5.528]}},"bounds_observed":{"United States":[-6.969,10.308],"China":[0.05,19.681],"NATO Europe":[-3.419,11.237],"Indo-Pacific allies":[-0.903,5.801]},"rates":{"us_trend":1.0276,"cn_trend":5.5023,"trend_window":[2015,2025],"us_contraction":-3.7585,"row_mean":6.7,"us_last":-7.537,"cn_last":7.412},"feedback":{"Indo-Pacific allies":{"mean":[2.45,0.076,-0.041],"cov":[[0.3938340951,0.0188847343,-0.0263760079],[0.0188847343,0.0052214783,-0.0022663215],[-0.0263760079,-0.0022663215,0.0033166934]],"se":[0.628,0.072,0.058],"r2":0.039,"nobs":35,"sample":[1991,2025],"breusch_godfrey_p":0.0969},"NATO Europe":{"mean":[2.788,0.279,-0.185],"cov":[[3.6895951377,0.1781186926,-0.2278662328],[0.1781186926,0.0256845,-0.0127050244],[-0.2278662328,-0.0127050244,0.0169553329]],"se":[1.921,0.16,0.13],"r2":0.124,"nobs":35,"sample":[1991,2025],"breusch_godfrey_p":0.0},"Hedging middle powers":{"mean":[2.051,0.194,0.154],"cov":[[1.4777549996,-0.0126349624,-0.0924334101],[-0.0126349624,0.0433020138,-0.0120712157],[-0.0924334101,-0.0120712157,0.0152601279]],"se":[1.216,0.208,0.124],"r2":0.089,"nobs":35,"sample":[1991,2025],"breusch_godfrey_p":0.3791}},"mobilization":{"Indo-Pacific allies":0.11,"NATO Europe":7.11,"Hedging middle powers":5.14},"decay_years":4,"event_years":[2028,2031],"mean_run_years":5,"resid":{"years":[1993,1994,1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025],"rows":[[-6.2488,-16.0116,1.6887,-4.5977,2.8873,-11.7424],[-6.0955,-11.7506,-1.1825,-4.871,-1.3308,2.9295],[-7.4877,-4.1048,-1.0214,-5.6256,-0.7491,-14.9538],[-6.3366,-2.029,-0.4238,-0.0905,-2.1562,-6.4652],[-1.4144,-1.2887,-1.1899,-0.7779,13.6816,-6.3062],[-3.1552,1.2173,-4.1443,-0.9516,3.704,-11.2296],[-0.6511,13.9379,-2.3285,1.3828,-2.5911,0.8293],[2.9727,0.2685,-1.7577,1.723,2.592,1.9846],[-0.085,10.6027,-0.7705,-2.3255,0.9429,0.6287],[11.3838,6.8841,-0.4589,2.2881,-9.1397,-1.4676],[12.9194,0.2538,-1.3779,-1.8319,-7.7354,-0.5063],[8.0949,2.1769,-1.8037,-4.6197,3.5048,-7.1091],[3.7088,1.8426,-0.7574,-3.8853,2.837,5.1088],[0.5438,7.1361,-0.9387,-2.0191,0.4463,2.9988],[1.7712,1.9557,1.328,0.5408,3.3889,5.9287],[6.3772,1.4406,0.9301,-0.2011,0.5839,1.6984],[6.9718,13.3736,3.0507,-1.6385,4.3411,-1.0256],[1.9615,-3.0451,-1.575,-3.7395,-2.3835,-3.4949],[-2.0812,-0.6188,-2.2188,-6.2819,-2.0846,1.2702],[-6.4516,2.3042,-1.9034,-2.8242,1.7968,5.0082],[-8.589,0.1603,-1.2104,-2.8668,6.0674,0.0438],[-7.0484,0.0117,1.6402,0.0937,4.4529,2.6139],[-3.168,-0.12,3.2192,1.5399,1.7094,0.6534],[-1.204,-2.2138,1.1059,1.7371,-14.1118,-1.8406],[-1.9275,-1.8202,-0.7374,1.0074,4.31,-6.45],[2.1126,-2.1127,0.6428,3.1219,-0.5976,-3.4609],[4.7852,-3.0986,2.5513,2.3298,-6.3286,-0.2195],[3.8102,-3.2569,0.5451,0.9149,-5.8832,-0.9415],[-1.969,-5.3662,3.1801,-0.0115,-6.7217,-1.3095],[-2.0523,-3.5525,-3.7372,0.978,2.0176,13.5787],[1.3228,-1.382,2.383,7.0445,1.5111,14.9252],[5.6634,-1.2359,3.6091,12.4208,-2.2283,16.2336],[-8.434,-0.5586,3.6631,12.0367,3.2663,2.089]]},"reserve":{"last_quarter":"2026-Q2","usd0":56.7048,"cny0":2.1138,"usd":{"mean":[-0.20824822,0.93236035],"cov":[[0.006609762889,-0.047908920378],[-0.047908920378,0.910149033545]],"se":[0.0813,0.954],"r2":0.0123,"nobs":104},"cny":{"mean":[0.01897317,0.05376151],"cov":[[0.000229244426,-0.000379682928],[-0.000379682928,0.087904574984]],"se":[0.0151,0.2965],"r2":0.0147,"nobs":36},"usd_resid":[-0.15611,-0.02369,0.10102,-0.73302,1.05183,0.86414,-0.55152,0.07726,-0.18082,-2.58668,-0.95766,-1.56735,-0.11912,0.25662,0.49436,-1.11805,1.37351,0.41476,-0.20187,-0.91901,1.07202,0.65848,0.50054,0.03946,0.14068,-0.64553,0.58776,-0.83251,0.09273,-0.14033,-0.55461,0.03309,0.61012,-0.19309,1.4174,-0.87696,1.10175,-1.30557,-0.91105,0.96656,-0.28022,0.92005,-0.57457,0.30397,0.05513,-0.10418,0.83985,0.40053,-0.52788,0.37511,-0.26468,0.10304,0.29848,0.02062,-0.2338,0.03499,-0.33439,0.09716,1.11371,0.3736,0.95459,0.01937,0.87161,0.03332,-0.0995,0.21066,-0.06854,1.04029,-0.30968,-0.55699,-0.05829,-0.46023,0.34309,-0.11968,-0.0934,-0.1012,0.33246,-0.27596,0.52561,-0.51439,1.21459,-0.23406,-0.65866,-1.27016,0.73441,-0.02549,0.20822,-0.29558,-0.27926,0.27926,0.59971,-1.32481,1.33254,-0.14191,0.03791,-0.54096,0.71023,-0.45959,-0.82257,0.77084,0.15221,-1.30425,-0.2352,-0.01669],"cny_resid":[0.011438,-0.013648,0.031701,0.092369,0.151904,0.252371,-0.042285,0.026109,-0.007906,-0.02175,-0.006351,-0.007133,-0.010987,0.009985,0.026472,0.039005,0.065812,0.029951,0.003948,0.030183,0.012292,-0.012292,-0.085399,-0.04692,0.000751,-0.075011,-0.037953,-0.062698,-0.112776,-0.049625,9.2e-05,-0.044287,-0.072081,-0.01621,-0.040927,-0.018143],"usd_jumps":[0.0149,0.5777],"cny_jumps":[-0.00082,-0.02516],"usd_shift":-0.020297,"cny_shift":-0.070534,"history":{"quarters":["2010-Q1","2010-Q2","2010-Q3","2010-Q4","2011-Q1","2011-Q2","2011-Q3","2011-Q4","2012-Q1","2012-Q2","2012-Q3","2012-Q4","2013-Q1","2013-Q2","2013-Q3","2013-Q4","2014-Q1","2014-Q2","2014-Q3","2014-Q4","2015-Q1","2015-Q2","2015-Q3","2015-Q4","2016-Q1","2016-Q2","2016-Q3","2016-Q4","2017-Q1","2017-Q2","2017-Q3","2017-Q4","2018-Q1","2018-Q2","2018-Q3","2018-Q4","2019-Q1","2019-Q2","2019-Q3","2019-Q4","2020-Q1","2020-Q2","2020-Q3","2020-Q4","2021-Q1","2021-Q2","2021-Q3","2021-Q4","2022-Q1","2022-Q2","2022-Q3","2022-Q4","2023-Q1","2023-Q2","2023-Q3","2023-Q4","2024-Q1","2024-Q2","2024-Q3","2024-Q4","2025-Q1","2025-Q2","2025-Q3","2025-Q4","2026-Q1","2026-Q2"],"usd":[61.787,62.563,61.822,61.936,61.816,61.551,62.245,62.515,61.873,62.15,61.805,61.844,62.079,62.038,61.742,61.716,61.317,61.345,62.386,62.682,63.549,63.472,64.237,64.154,63.929,64.005,63.793,64.68,64.22,63.514,63.31,62.707,62.898,62.615,62.349,62.065,62.207,61.732,62.05,61.32,62.321,61.875,61.007,59.528,60.063,59.846,59.871,59.402,59.417,59.994,60.433,58.951,60.123,59.818,59.69,58.98,59.511,58.864,57.844,58.408,58.388,56.945,56.607,56.522,57.179,56.705],"cny":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,0.997,1.031,1.04,1.097,1.23,1.46,1.912,1.872,1.96,1.983,1.978,2.003,2.026,2.041,2.099,2.195,2.323,2.524,2.65,2.713,2.852,2.849,2.781,2.613,2.551,2.607,2.475,2.435,2.339,2.137,2.076,2.117,2.065,1.964,1.978,1.947,1.964,1.984,2.114]}},"war_risk_multiple":5.7,"h2":{"b_us":0.16,"b_cn":-0.056,"p_one_sided":0.1166,"verdict":"not supported at the 5 percent level"},"published":{"draws":10000,"endpoints_musd":{"accretion":{"United States":989392.0,"China":564319.0,"Indo-Pacific allies":218998.0,"NATO Europe":642906.0,"Hedging middle powers":331556.0,"Rest of world":995993.0},"retrenchment":{"United States":609635.0,"China":572125.0,"Indo-Pacific allies":212493.0,"NATO Europe":568676.0,"Hedging middle powers":305451.0,"Rest of world":996979.0},"demonstration":{"United States":989870.0,"China":570085.0,"Indo-Pacific allies":219344.0,"NATO Europe":761695.0,"Hedging middle powers":374256.0,"Rest of world":1001515.0}},"allied_share":{"accretion":22.93,"retrenchment":23.85,"demonstration":24.94},"usd":{"accretion":50.349,"retrenchment":52.031,"demonstration":50.869},"cny":{"accretion":4.626,"retrenchment":5.067,"demonstration":0.897}}},"design":{"seats":{"United States":{"short":"United States","code":"us","refs":[["Ten-year rate",1.03],["1988 to 1998 rate",-3.76],["No real change",0.0]],"objectives":[{"measure":"cn_us","op":"<=","label":"China to United States expenditure ratio at or below the reference median"},{"measure":"usd","op":">=","label":"US dollar reserve share at or above the reference median"}],"bounds":[-7.0,10.5]},"China":{"short":"China","code":"cn","refs":[["Ten-year rate",5.5],["2025 rate",7.41],["No real change",0.0]],"objectives":[{"measure":"cn_us","op":">=","label":"China to United States expenditure ratio at or above the reference median"},{"measure":"cny","op":">=","label":"Renminbi reserve share at or above the reference median"}],"bounds":[0.0,20.0]},"NATO Europe":{"short":"NATO Europe","code":"eu","refs":[["Ten-year rate",6.45],["No real change",0.0]],"objectives":[{"measure":"coalition_cn","op":">=","label":"Coalition to China expenditure ratio at or above the reference median"},{"measure":"us_share_coalition","op":">=","label":"United States share of coalition expenditure at or above the reference median"}],"bounds":[-3.5,11.5]},"Indo-Pacific allies":{"short":"Indo-Pacific allies","code":"ip","refs":[["Ten-year rate",3.58],["No real change",0.0]],"objectives":[{"measure":"coalition_cn","op":">=","label":"Coalition to China expenditure ratio at or above the reference median"},{"measure":"us_share_coalition","op":">=","label":"United States share of coalition expenditure at or above the reference median"}],"bounds":[-1.0,6.0]}},"seat_order":["United States","China","NATO Europe","Indo-Pacific allies"],"start_year":2026,"horizon":2035,"periods":[{"roman":"I","years":[2027,2028]},{"roman":"II","years":[2029,2030]},{"roman":"III","years":[2031,2032]},{"roman":"IV","years":[2033,2034]},{"roman":"V","years":[2035]}],"step":0.5,"coverage":0.8,"staff_draws":400,"reference_draws":10000,"pathway_prior":{"accretion":0.333333,"retrenchment":0.333333,"demonstration":0.333333},"us_midpoint":-1.3655,"bound_rule":{"quantiles":[0.05,0.95],"sample":[1993,2025]},"coalition":["United States","NATO Europe","Indo-Pacific allies"]}};
-const REF = {"note":"Accretion pathway, every seat held by the model.","draws":10000,"seed":20260725,"probs":[0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95],"dist":{"cn_us":[0.3949529,0.4169479,0.4381101,0.4555128,0.4706206,0.4857799,0.5021715,0.5182626,0.534585,0.5508355,0.5714502,0.5895434,0.608964,0.6240836,0.643756,0.6738752,0.7100335,0.7350916,0.7900303],"coalition_cn":[2.336441,2.474862,2.594204,2.691525,2.785854,2.888837,2.986228,3.08647,3.1963,3.312891,3.439173,3.572058,3.733055,3.901343,4.105994,4.342835,4.608755,4.954143,5.422882],"us_share_coalition":[41.63197,43.63324,45.21478,46.51271,47.65675,48.71063,49.79881,50.89602,51.94243,52.93322,54.02303,55.23596,56.47211,57.78004,59.1648,60.75734,62.43902,64.29325,66.64266],"allied_share":[16.78564,17.74999,18.52172,19.22871,19.92018,20.54007,21.16717,21.75708,22.38111,22.97802,23.60949,24.23145,24.9127,25.56964,26.34067,27.16274,28.04523,29.13884,30.77404],"usd":[41.9588,43.80346,45.04482,46.06641,46.88377,47.66536,48.36808,49.05932,49.69242,50.31291,50.93215,51.57695,52.23789,52.93326,53.64154,54.48268,55.46918,56.71746,58.44717],"cny":[1.186262,1.622701,1.999054,2.350579,2.689602,3.070698,3.404671,3.78778,4.18311,4.591309,5.120122,5.673806,6.229369,7.001687,7.88633,8.998262,10.49426,12.60459,17.03357],"cum:United States":[7637155,7945298,8184706,8388769,8622001,8843690,9064737,9293151,9542944,9801855,9979885,10171280,10360870,10638830,10963990,11358100,11761270,12413620,13154680],"cum:China":[3502110,3587281,3717219,3861212,3980949,4093157,4204632,4311494,4400997,4512048,4663225,4809047,4940997,5042416,5180821,5333238,5438567,5617661,5896729],"cum:NATO Europe":[4917743,5103575,5241366,5350063,5457176,5560862,5655183,5745509,5838206,5945096,6049814,6172469,6295805,6443265,6613990,6814998,7059146,7365559,7783171],"cum:Indo-Pacific allies":[1787661,1824740,1854110,1878968,1900087,1918865,1935494,1952035,1968440,1984256,1999909,2016904,2033759,2052390,2071091,2093767,2116864,2145913,2187254]},"year_medians":{"2026":{"United States":932661,"China":351580,"Indo-Pacific allies":177779,"NATO Europe":548986,"Hedging middle powers":254882,"Rest of world":563722},"2027":{"United States":946854,"China":372516,"Indo-Pacific allies":181607,"NATO Europe":558066,"Hedging middle powers":262901,"Rest of world":594713},"2028":{"United States":949333,"China":388294,"Indo-Pacific allies":186598,"NATO Europe":565994,"Hedging middle powers":270224,"Rest of world":635123},"2029":{"United States":964862,"China":411026,"Indo-Pacific allies":191396,"NATO Europe":574396,"Hedging middle powers":277274,"Rest of world":685044},"2030":{"United States":977844,"China":438292,"Indo-Pacific allies":195753,"NATO Europe":584263,"Hedging middle powers":285526,"Rest of world":728184},"2031":{"United States":971641,"China":458502,"Indo-Pacific allies":200231,"NATO Europe":594234,"Hedging middle powers":293615,"Rest of world":776842},"2032":{"United States":986657,"China":480937,"Indo-Pacific allies":204892,"NATO Europe":605992,"Hedging middle powers":302658,"Rest of world":828379},"2033":{"United States":982182,"China":508473,"Indo-Pacific allies":209509,"NATO Europe":617842,"Hedging middle powers":311355,"Rest of world":882189},"2034":{"United States":990513,"China":536472,"Indo-Pacific allies":214353,"NATO Europe":630821,"Hedging middle powers":320624,"Rest of world":945934},"2035":{"United States":989871,"China":563908,"Indo-Pacific allies":219241,"NATO Europe":642236,"Hedging middle powers":330565,"Rest of world":1002958}},"usd_fan":[{"qi":0,"p10":55.66,"p50":56.533,"p90":57.478},{"qi":1,"p10":55.14,"p50":56.399,"p90":57.635},{"qi":2,"p10":54.638,"p50":56.234,"p90":57.752},{"qi":3,"p10":54.207,"p50":56.068,"p90":57.83},{"qi":4,"p10":53.729,"p50":55.904,"p90":57.898},{"qi":5,"p10":53.33,"p50":55.728,"p90":57.966},{"qi":6,"p10":52.989,"p50":55.567,"p90":57.98},{"qi":7,"p10":52.647,"p50":55.412,"p90":57.977},{"qi":8,"p10":52.265,"p50":55.218,"p90":57.983},{"qi":9,"p10":51.917,"p50":55.047,"p90":58.007},{"qi":10,"p10":51.646,"p50":54.88,"p90":57.95},{"qi":11,"p10":51.347,"p50":54.68,"p90":57.982},{"qi":12,"p10":51.007,"p50":54.517,"p90":57.948},{"qi":13,"p10":50.672,"p50":54.363,"p90":57.962},{"qi":14,"p10":50.341,"p50":54.185,"p90":57.946},{"qi":15,"p10":50.067,"p50":54.02,"p90":57.875},{"qi":16,"p10":49.729,"p50":53.873,"p90":57.863},{"qi":17,"p10":49.483,"p50":53.668,"p90":57.854},{"qi":18,"p10":49.155,"p50":53.511,"p90":57.784},{"qi":19,"p10":48.855,"p50":53.351,"p90":57.762},{"qi":20,"p10":48.494,"p50":53.17,"p90":57.765},{"qi":21,"p10":48.28,"p50":53.015,"p90":57.656},{"qi":22,"p10":47.992,"p50":52.863,"p90":57.64},{"qi":23,"p10":47.746,"p50":52.659,"p90":57.553},{"qi":24,"p10":47.425,"p50":52.533,"p90":57.481},{"qi":25,"p10":47.173,"p50":52.341,"p90":57.35},{"qi":26,"p10":46.904,"p50":52.19,"p90":57.33},{"qi":27,"p10":46.611,"p50":51.982,"p90":57.259},{"qi":28,"p10":46.383,"p50":51.813,"p90":57.222},{"qi":29,"p10":46.027,"p50":51.635,"p90":57.185},{"qi":30,"p10":45.756,"p50":51.45,"p90":57.152},{"qi":31,"p10":45.496,"p50":51.293,"p90":57.109},{"qi":32,"p10":45.121,"p50":51.144,"p90":57.038},{"qi":33,"p10":44.886,"p50":50.985,"p90":56.959},{"qi":34,"p10":44.564,"p50":50.821,"p90":56.863},{"qi":35,"p10":44.308,"p50":50.691,"p90":56.825},{"qi":36,"p10":44.09,"p50":50.512,"p90":56.744},{"qi":37,"p10":43.803,"p50":50.313,"p90":56.717}],"parity":{"tolerance":{"level":0.03,"usd":0.35,"cny":0.35,"allied_share":0.6},"passed":true,"rows":[{"pathway":"accretion","quantity":"United States, 2035, USD m","engine":989871,"published":989392,"deviation":"0.05 %","ok":true},{"pathway":"accretion","quantity":"China, 2035, USD m","engine":563908,"published":564319,"deviation":"-0.07 %","ok":true},{"pathway":"accretion","quantity":"Indo-Pacific allies, 2035, USD m","engine":219241,"published":218998,"deviation":"0.11 %","ok":true},{"pathway":"accretion","quantity":"NATO Europe, 2035, USD m","engine":642236,"published":642906,"deviation":"-0.10 %","ok":true},{"pathway":"accretion","quantity":"Hedging middle powers, 2035, USD m","engine":330565,"published":331556,"deviation":"-0.30 %","ok":true},{"pathway":"accretion","quantity":"Rest of world, 2035, USD m","engine":1002958,"published":995993,"deviation":"0.70 %","ok":true},{"pathway":"accretion","quantity":"US dollar reserve share, 2035-Q4, percent","engine":50.31,"published":50.349,"deviation":"-0.04 pp","ok":true},{"pathway":"accretion","quantity":"Renminbi reserve share, 2035-Q4, percent","engine":4.59,"published":4.626,"deviation":"-0.03 pp","ok":true},{"pathway":"accretion","quantity":"Allied share of world expenditure, 2035, percent","engine":22.98,"published":22.93,"deviation":"0.05 pp","ok":true},{"pathway":"retrenchment","quantity":"United States, 2035, USD m","engine":606896,"published":609635,"deviation":"-0.45 %","ok":true},{"pathway":"retrenchment","quantity":"China, 2035, USD m","engine":566261,"published":572125,"deviation":"-1.02 %","ok":true},{"pathway":"retrenchment","quantity":"Indo-Pacific allies, 2035, USD m","engine":212156,"published":212493,"deviation":"-0.16 %","ok":true},{"pathway":"retrenchment","quantity":"NATO Europe, 2035, USD m","engine":568962,"published":568676,"deviation":"0.05 %","ok":true},{"pathway":"retrenchment","quantity":"Hedging middle powers, 2035, USD m","engine":305647,"published":305451,"deviation":"0.06 %","ok":true},{"pathway":"retrenchment","quantity":"Rest of world, 2035, USD m","engine":998018,"published":996979,"deviation":"0.10 %","ok":true},{"pathway":"retrenchment","quantity":"US dollar reserve share, 2035-Q4, percent","engine":51.88,"published":52.031,"deviation":"-0.15 pp","ok":true},{"pathway":"retrenchment","quantity":"Renminbi reserve share, 2035-Q4, percent","engine":5.05,"published":5.067,"deviation":"-0.02 pp","ok":true},{"pathway":"retrenchment","quantity":"Allied share of world expenditure, 2035, percent","engine":23.89,"published":23.85,"deviation":"0.04 pp","ok":true},{"pathway":"demonstration","quantity":"United States, 2035, USD m","engine":986850,"published":989870,"deviation":"-0.31 %","ok":true},{"pathway":"demonstration","quantity":"China, 2035, USD m","engine":570953,"published":570085,"deviation":"0.15 %","ok":true},{"pathway":"demonstration","quantity":"Indo-Pacific allies, 2035, USD m","engine":219187,"published":219344,"deviation":"-0.07 %","ok":true},{"pathway":"demonstration","quantity":"NATO Europe, 2035, USD m","engine":755179,"published":761695,"deviation":"-0.86 %","ok":true},{"pathway":"demonstration","quantity":"Hedging middle powers, 2035, USD m","engine":377169,"published":374256,"deviation":"0.78 %","ok":true},{"pathway":"demonstration","quantity":"Rest of world, 2035, USD m","engine":997056,"published":1001515,"deviation":"-0.45 %","ok":true},{"pathway":"demonstration","quantity":"US dollar reserve share, 2035-Q4, percent","engine":50.76,"published":50.869,"deviation":"-0.11 pp","ok":true},{"pathway":"demonstration","quantity":"Renminbi reserve share, 2035-Q4, percent","engine":0.91,"published":0.897,"deviation":"0.01 pp","ok":true},{"pathway":"demonstration","quantity":"Allied share of world expenditure, 2035, percent","engine":24.93,"published":24.94,"deviation":"-0.01 pp","ok":true}]}};
+const PAYLOAD = {"meta":{"title":"Committee Exercise","series":"The Primacy Premium","author":"Alyssa I. Agard","license":"CC BY-NC 4.0","seed":20260724,"built":"2026-11-21"},"model":{"source":{"repository":"https://github.com/alyssaagard/primacy-premium","version":"1.1.0","commit":"7099dd148424c25f56c5d5fcfee2764c28b28d15","built":"2026-11-21"},"seed":20260724,"blocks":["United States","China","Indo-Pacific allies","NATO Europe","Hedging middle powers","Rest of world"],"allied":["Indo-Pacific allies","NATO Europe","Hedging middle powers"],"base_year":2025,"base":{"United States":929162.9,"China":335017.6,"Indo-Pacific allies":175704.1,"NATO Europe":554250.5,"Hedging middle powers":249051.9,"Rest of world":528107.2},"history":{"years":[2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025],"levels":{"United States":[1061674.3,1049103.0,990830.7,914617.2,858357.1,838865.1,836290.9,827674.3,852585.0,901032.1,943446.6,933334.5,922552.5,943032.8,1004901.0,929162.9],"China":[131535.8,141205.8,155714.1,168374.6,181814.4,196087.6,207375.4,220129.3,233023.7,244376.0,255894.6,262558.7,274158.2,292220.8,311900.4,335017.6],"Indo-Pacific allies":[113605.1,113818.3,113929.9,114318.4,117882.0,123562.7,127275.6,129051.8,132542.5,139078.4,143483.8,151712.8,149386.2,156118.0,165328.0,175704.1],"NATO Europe":[320414.8,309426.4,304635.0,294426.6,292687.3,296530.0,304291.1,312880.7,327469.0,344013.2,359718.3,371934.3,383696.7,417732.8,479505.5,554250.5],"Hedging middle powers":[170355.0,173467.9,182658.0,199408.6,212991.1,222243.3,198363.7,213708.6,219582.2,214655.1,211581.8,206326.8,216250.5,226125.1,230230.9,249051.9],"Rest of world":[218636.3,228932.6,248271.4,256918.7,272470.3,283621.3,288155.2,279479.4,279418.9,288415.2,295619.0,301914.9,353294.5,418175.1,500441.8,528107.2]},"growth":{"United States":[2.859,-1.184,-5.554,-7.692,-6.151,-2.271,-0.307,-1.03,3.01,5.682,4.707,-1.072,-1.155,2.22,6.561,-7.537],"China":[4.925,7.352,10.275,8.131,7.982,7.85,5.757,6.15,5.858,4.872,4.714,2.604,4.418,6.588,6.734,7.412],"Indo-Pacific allies":[0.541,0.188,0.098,0.341,3.117,4.819,3.005,1.396,2.705,4.931,3.168,5.735,-1.534,4.506,5.899,6.276],"NATO Europe":[-2.523,-3.429,-1.548,-3.351,-0.591,1.313,2.617,2.823,4.663,5.052,4.565,3.396,3.162,8.871,14.788,15.588],"Hedging middle powers":[5.028,1.827,5.298,9.17,6.811,4.344,-10.745,7.736,2.748,-2.244,-1.432,-2.484,4.81,4.566,1.816,8.175],"Rest of world":[-0.056,4.709,8.447,3.483,6.053,4.093,1.599,-3.011,-0.022,3.22,2.498,2.13,17.018,18.364,19.673,5.528]}},"bounds_observed":{"United States":[-6.969,10.308],"China":[0.05,19.681],"NATO Europe":[-3.419,11.237],"Indo-Pacific allies":[-0.903,5.801]},"rates":{"us_trend":1.0276,"cn_trend":5.5023,"trend_window":[2015,2025],"us_contraction":-3.7585,"row_mean":6.7,"us_last":-7.537,"cn_last":7.412},"feedback":{"Indo-Pacific allies":{"mean":[2.45,0.076,-0.041],"cov":[[0.3938340951,0.0188847343,-0.0263760079],[0.0188847343,0.0052214783,-0.0022663215],[-0.0263760079,-0.0022663215,0.0033166934]],"se":[0.628,0.072,0.058],"r2":0.039,"nobs":35,"sample":[1991,2025],"breusch_godfrey_p":0.0969},"NATO Europe":{"mean":[2.788,0.279,-0.185],"cov":[[3.6895951377,0.1781186926,-0.2278662328],[0.1781186926,0.0256845,-0.0127050244],[-0.2278662328,-0.0127050244,0.0169553329]],"se":[1.921,0.16,0.13],"r2":0.124,"nobs":35,"sample":[1991,2025],"breusch_godfrey_p":0.0},"Hedging middle powers":{"mean":[2.051,0.194,0.154],"cov":[[1.4777549996,-0.0126349624,-0.0924334101],[-0.0126349624,0.0433020138,-0.0120712157],[-0.0924334101,-0.0120712157,0.0152601279]],"se":[1.216,0.208,0.124],"r2":0.089,"nobs":35,"sample":[1991,2025],"breusch_godfrey_p":0.3791}},"mobilization":{"Indo-Pacific allies":0.11,"NATO Europe":7.11,"Hedging middle powers":5.14},"decay_years":4,"event_years":[2028,2031],"mean_run_years":5,"resid":{"years":[1993,1994,1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025],"rows":[[-6.2488,-16.0116,1.6887,-4.5977,2.8873,-11.7424],[-6.0955,-11.7506,-1.1825,-4.871,-1.3308,2.9295],[-7.4877,-4.1048,-1.0214,-5.6256,-0.7491,-14.9538],[-6.3366,-2.029,-0.4238,-0.0905,-2.1562,-6.4652],[-1.4144,-1.2887,-1.1899,-0.7779,13.6816,-6.3062],[-3.1552,1.2173,-4.1443,-0.9516,3.704,-11.2296],[-0.6511,13.9379,-2.3285,1.3828,-2.5911,0.8293],[2.9727,0.2685,-1.7577,1.723,2.592,1.9846],[-0.085,10.6027,-0.7705,-2.3255,0.9429,0.6287],[11.3838,6.8841,-0.4589,2.2881,-9.1397,-1.4676],[12.9194,0.2538,-1.3779,-1.8319,-7.7354,-0.5063],[8.0949,2.1769,-1.8037,-4.6197,3.5048,-7.1091],[3.7088,1.8426,-0.7574,-3.8853,2.837,5.1088],[0.5438,7.1361,-0.9387,-2.0191,0.4463,2.9988],[1.7712,1.9557,1.328,0.5408,3.3889,5.9287],[6.3772,1.4406,0.9301,-0.2011,0.5839,1.6984],[6.9718,13.3736,3.0507,-1.6385,4.3411,-1.0256],[1.9615,-3.0451,-1.575,-3.7395,-2.3835,-3.4949],[-2.0812,-0.6188,-2.2188,-6.2819,-2.0846,1.2702],[-6.4516,2.3042,-1.9034,-2.8242,1.7968,5.0082],[-8.589,0.1603,-1.2104,-2.8668,6.0674,0.0438],[-7.0484,0.0117,1.6402,0.0937,4.4529,2.6139],[-3.168,-0.12,3.2192,1.5399,1.7094,0.6534],[-1.204,-2.2138,1.1059,1.7371,-14.1118,-1.8406],[-1.9275,-1.8202,-0.7374,1.0074,4.31,-6.45],[2.1126,-2.1127,0.6428,3.1219,-0.5976,-3.4609],[4.7852,-3.0986,2.5513,2.3298,-6.3286,-0.2195],[3.8102,-3.2569,0.5451,0.9149,-5.8832,-0.9415],[-1.969,-5.3662,3.1801,-0.0115,-6.7217,-1.3095],[-2.0523,-3.5525,-3.7372,0.978,2.0176,13.5787],[1.3228,-1.382,2.383,7.0445,1.5111,14.9252],[5.6634,-1.2359,3.6091,12.4208,-2.2283,16.2336],[-8.434,-0.5586,3.6631,12.0367,3.2663,2.089]]},"reserve":{"last_quarter":"2026-Q2","usd0":56.7048,"cny0":2.1138,"usd":{"mean":[-0.20824822,0.93236035],"cov":[[0.006609762889,-0.047908920378],[-0.047908920378,0.910149033545]],"se":[0.0813,0.954],"r2":0.0123,"nobs":104},"cny":{"mean":[0.01897317,0.05376151],"cov":[[0.000229244426,-0.000379682928],[-0.000379682928,0.087904574984]],"se":[0.0151,0.2965],"r2":0.0147,"nobs":36},"usd_resid":[-0.15611,-0.02369,0.10102,-0.73302,1.05183,0.86414,-0.55152,0.07726,-0.18082,-2.58668,-0.95766,-1.56735,-0.11912,0.25662,0.49436,-1.11805,1.37351,0.41476,-0.20187,-0.91901,1.07202,0.65848,0.50054,0.03946,0.14068,-0.64553,0.58776,-0.83251,0.09273,-0.14033,-0.55461,0.03309,0.61012,-0.19309,1.4174,-0.87696,1.10175,-1.30557,-0.91105,0.96656,-0.28022,0.92005,-0.57457,0.30397,0.05513,-0.10418,0.83985,0.40053,-0.52788,0.37511,-0.26468,0.10304,0.29848,0.02062,-0.2338,0.03499,-0.33439,0.09716,1.11371,0.3736,0.95459,0.01937,0.87161,0.03332,-0.0995,0.21066,-0.06854,1.04029,-0.30968,-0.55699,-0.05829,-0.46023,0.34309,-0.11968,-0.0934,-0.1012,0.33246,-0.27596,0.52561,-0.51439,1.21459,-0.23406,-0.65866,-1.27016,0.73441,-0.02549,0.20822,-0.29558,-0.27926,0.27926,0.59971,-1.32481,1.33254,-0.14191,0.03791,-0.54096,0.71023,-0.45959,-0.82257,0.77084,0.15221,-1.30425,-0.2352,-0.01669],"cny_resid":[0.011438,-0.013648,0.031701,0.092369,0.151904,0.252371,-0.042285,0.026109,-0.007906,-0.02175,-0.006351,-0.007133,-0.010987,0.009985,0.026472,0.039005,0.065812,0.029951,0.003948,0.030183,0.012292,-0.012292,-0.085399,-0.04692,0.000751,-0.075011,-0.037953,-0.062698,-0.112776,-0.049625,9.2e-05,-0.044287,-0.072081,-0.01621,-0.040927,-0.018143],"usd_jumps":[0.0149,0.5777],"cny_jumps":[-0.00082,-0.02516],"usd_shift":-0.020297,"cny_shift":-0.070534,"history":{"quarters":["2010-Q1","2010-Q2","2010-Q3","2010-Q4","2011-Q1","2011-Q2","2011-Q3","2011-Q4","2012-Q1","2012-Q2","2012-Q3","2012-Q4","2013-Q1","2013-Q2","2013-Q3","2013-Q4","2014-Q1","2014-Q2","2014-Q3","2014-Q4","2015-Q1","2015-Q2","2015-Q3","2015-Q4","2016-Q1","2016-Q2","2016-Q3","2016-Q4","2017-Q1","2017-Q2","2017-Q3","2017-Q4","2018-Q1","2018-Q2","2018-Q3","2018-Q4","2019-Q1","2019-Q2","2019-Q3","2019-Q4","2020-Q1","2020-Q2","2020-Q3","2020-Q4","2021-Q1","2021-Q2","2021-Q3","2021-Q4","2022-Q1","2022-Q2","2022-Q3","2022-Q4","2023-Q1","2023-Q2","2023-Q3","2023-Q4","2024-Q1","2024-Q2","2024-Q3","2024-Q4","2025-Q1","2025-Q2","2025-Q3","2025-Q4","2026-Q1","2026-Q2"],"usd":[61.787,62.563,61.822,61.936,61.816,61.551,62.245,62.515,61.873,62.15,61.805,61.844,62.079,62.038,61.742,61.716,61.317,61.345,62.386,62.682,63.549,63.472,64.237,64.154,63.929,64.005,63.793,64.68,64.22,63.514,63.31,62.707,62.898,62.615,62.349,62.065,62.207,61.732,62.05,61.32,62.321,61.875,61.007,59.528,60.063,59.846,59.871,59.402,59.417,59.994,60.433,58.951,60.123,59.818,59.69,58.98,59.511,58.864,57.844,58.408,58.388,56.945,56.607,56.522,57.179,56.705],"cny":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,0.997,1.031,1.04,1.097,1.23,1.46,1.912,1.872,1.96,1.983,1.978,2.003,2.026,2.041,2.099,2.195,2.323,2.524,2.65,2.713,2.852,2.849,2.781,2.613,2.551,2.607,2.475,2.435,2.339,2.137,2.076,2.117,2.065,1.964,1.978,1.947,1.964,1.984,2.114]}},"war_risk_multiple":5.7,"h2":{"b_us":0.16,"b_cn":-0.056,"p_one_sided":0.1166,"verdict":"not supported at the 5 percent level"},"published":{"draws":10000,"endpoints_musd":{"accretion":{"United States":989392.0,"China":564319.0,"Indo-Pacific allies":218998.0,"NATO Europe":642906.0,"Hedging middle powers":331556.0,"Rest of world":995993.0},"retrenchment":{"United States":609635.0,"China":572125.0,"Indo-Pacific allies":212493.0,"NATO Europe":568676.0,"Hedging middle powers":305451.0,"Rest of world":996979.0},"demonstration":{"United States":989870.0,"China":570085.0,"Indo-Pacific allies":219344.0,"NATO Europe":761695.0,"Hedging middle powers":374256.0,"Rest of world":1001515.0}},"allied_share":{"accretion":22.93,"retrenchment":23.85,"demonstration":24.94},"usd":{"accretion":50.349,"retrenchment":52.031,"demonstration":50.869},"cny":{"accretion":4.626,"retrenchment":5.067,"demonstration":0.897}}},"design":{"seats":{"United States":{"code":"us","goal":"Retain the expenditure margin over China and the reserve position of the dollar.","refs":[["Ten-year rate",1.03],["1988 to 1998 rate",-3.76],["No real change",0.0]],"objectives":[{"measure":"cn_us","dp":3,"label":"China to United States expenditure ratio, 2035","op":"<="},{"measure":"usd","op":">=","dp":2,"label":"US dollar reserve share, 2035-Q4, percent"}],"bounds":[-7.0,10.5]},"China":{"code":"cn","goal":"Close the expenditure gap with the United States and raise the reserve role of the renminbi.","refs":[["Ten-year rate",5.5],["2025 rate",7.41],["No real change",0.0]],"objectives":[{"measure":"cn_us","dp":3,"label":"China to United States expenditure ratio, 2035","op":">="},{"measure":"cny","op":">=","dp":2,"label":"Renminbi reserve share, 2035-Q4, percent"}],"bounds":[0.0,20.0]},"NATO Europe":{"code":"eu","goal":"Keep the coalition's expenditure margin over China while the United States continues to carry its share.","refs":[["Ten-year rate",6.45],["No real change",0.0]],"objectives":[{"measure":"coalition_cn","op":">=","dp":2,"label":"Coalition to China expenditure ratio, 2035"},{"measure":"us_share_coalition","op":">=","dp":1,"label":"United States share of coalition expenditure, 2035, percent"}],"bounds":[-3.5,11.5]},"Indo-Pacific allies":{"code":"ip","goal":"Keep the coalition's expenditure margin over China while the United States continues to carry its share.","refs":[["Ten-year rate",3.58],["No real change",0.0]],"objectives":[{"measure":"coalition_cn","op":">=","dp":2,"label":"Coalition to China expenditure ratio, 2035"},{"measure":"us_share_coalition","op":">=","dp":1,"label":"United States share of coalition expenditure, 2035, percent"}],"bounds":[-1.0,6.0]}},"seat_order":["United States","China","NATO Europe","Indo-Pacific allies"],"start_year":2026,"horizon":2035,"periods":[{"roman":"I","years":[2027,2028]},{"roman":"II","years":[2029,2030]},{"roman":"III","years":[2031,2032]},{"roman":"IV","years":[2033,2034]},{"roman":"V","years":[2035]}],"step":0.5,"coverage":0.8,"resource_quantile":0.75,"staff_draws":2000,"reference_draws":50000,"pathway_prior":{"accretion":0.333333,"retrenchment":0.333333,"demonstration":0.333333},"us_midpoint":-1.3655,"bound_rule":{"quantiles":[0.05,0.95],"sample":[1993,2025]},"coalition":["United States","NATO Europe","Indo-Pacific allies"]}};
+const REF = {"note":"Accretion pathway, every seat held by the model.","draws":50000,"seed":20260725,"probs":[0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95],"dist":{"cn_us":[0.3938219,0.4150418,0.4362717,0.4547034,0.4715521,0.4879142,0.5028716,0.5193171,0.5354379,0.5533612,0.5741776,0.5920993,0.6091248,0.6248681,0.6438092,0.6740764,0.7100335,0.7327725,0.7897706],"coalition_cn":[2.333873,2.47932,2.591768,2.687017,2.779289,2.87711,2.972339,3.078196,3.187999,3.306499,3.432509,3.573048,3.727667,3.902069,4.103911,4.336637,4.601249,4.943507,5.402643],"us_share_coalition":[41.66951,43.77239,45.29992,46.60292,47.79093,48.88878,49.94295,50.99021,52.04386,53.10093,54.19506,55.34905,56.522,57.82573,59.18262,60.70801,62.35068,64.14383,66.47238],"allied_share":[16.86835,17.82094,18.5895,19.2496,19.89738,20.49374,21.09977,21.69443,22.30285,22.91156,23.54145,24.18911,24.84281,25.54444,26.29458,27.09032,28.00596,29.09611,30.63754],"usd":[41.96202,43.83985,45.07736,46.10028,46.96706,47.73258,48.40809,49.10078,49.73256,50.36407,50.98985,51.63448,52.31061,53.01048,53.76439,54.57993,55.5535,56.7595,58.50161],"cny":[1.186706,1.618804,1.991262,2.340345,2.680677,3.023603,3.378251,3.751454,4.158541,4.589608,5.099225,5.656856,6.272889,7.035012,7.898354,9.009477,10.52593,12.72987,17.01717],"cum:United States":[7657158,7945298,8197445,8388769,8614779,8854059,9064641,9284758,9542048,9803844,9984802,10173610,10361970,10647380,10944790,11307120,11761270,12399440,13204080],"cum:China":[3501529,3587281,3717661,3859843,3975952,4088682,4198623,4310295,4399753,4513440,4650476,4797297,4944536,5045571,5188161,5331532,5432172,5614176,5866046],"cum:NATO Europe":[4911180,5099285,5236492,5352195,5455433,5554007,5647149,5739572,5836170,5937371,6045462,6162888,6295786,6446289,6617746,6811464,7037096,7333041,7755134],"cum:Indo-Pacific allies":[1788827,1826713,1854889,1878524,1899564,1918839,1936228,1953222,1969002,1984946,2000782,2017177,2033494,2051216,2069742,2090577,2113698,2141881,2182145]},"year_medians":{"2026":{"United States":932661,"China":351580,"Indo-Pacific allies":177820,"NATO Europe":548880,"Hedging middle powers":254889,"Rest of world":563722},"2027":{"United States":946854,"China":372115,"Indo-Pacific allies":181710,"NATO Europe":557597,"Hedging middle powers":262727,"Rest of world":594491},"2028":{"United States":949333,"China":388117,"Indo-Pacific allies":186646,"NATO Europe":566063,"Hedging middle powers":270422,"Rest of world":633412},"2029":{"United States":964559,"China":410094,"Indo-Pacific allies":191475,"NATO Europe":574717,"Hedging middle powers":277447,"Rest of world":684889},"2030":{"United States":975057,"China":437651,"Indo-Pacific allies":196021,"NATO Europe":584266,"Hedging middle powers":285469,"Rest of world":723495},"2031":{"United States":973435,"China":457614,"Indo-Pacific allies":200371,"NATO Europe":594397,"Hedging middle powers":293869,"Rest of world":773720},"2032":{"United States":987076,"China":480539,"Indo-Pacific allies":204823,"NATO Europe":605646,"Hedging middle powers":303218,"Rest of world":824284},"2033":{"United States":983019,"China":509249,"Indo-Pacific allies":209528,"NATO Europe":617306,"Hedging middle powers":312159,"Rest of world":878313},"2034":{"United States":990043,"China":536246,"Indo-Pacific allies":214231,"NATO Europe":629511,"Hedging middle powers":321382,"Rest of world":940143},"2035":{"United States":989871,"China":564476,"Indo-Pacific allies":219132,"NATO Europe":641861,"Hedging middle powers":331274,"Rest of world":999361}},"usd_fan":[{"qi":0,"p10":55.681,"p50":56.55,"p90":57.509},{"qi":1,"p10":55.135,"p50":56.41,"p90":57.643},{"qi":2,"p10":54.664,"p50":56.26,"p90":57.779},{"qi":3,"p10":54.218,"p50":56.091,"p90":57.867},{"qi":4,"p10":53.81,"p50":55.942,"p90":57.931},{"qi":5,"p10":53.424,"p50":55.764,"p90":57.973},{"qi":6,"p10":53.058,"p50":55.601,"p90":57.999},{"qi":7,"p10":52.713,"p50":55.428,"p90":58.003},{"qi":8,"p10":52.374,"p50":55.26,"p90":58.016},{"qi":9,"p10":52.03,"p50":55.108,"p90":58.015},{"qi":10,"p10":51.723,"p50":54.931,"p90":57.994},{"qi":11,"p10":51.397,"p50":54.755,"p90":57.99},{"qi":12,"p10":51.072,"p50":54.585,"p90":57.977},{"qi":13,"p10":50.772,"p50":54.422,"p90":57.948},{"qi":14,"p10":50.453,"p50":54.264,"p90":57.924},{"qi":15,"p10":50.135,"p50":54.103,"p90":57.894},{"qi":16,"p10":49.83,"p50":53.943,"p90":57.858},{"qi":17,"p10":49.531,"p50":53.765,"p90":57.812},{"qi":18,"p10":49.222,"p50":53.59,"p90":57.773},{"qi":19,"p10":48.921,"p50":53.426,"p90":57.749},{"qi":20,"p10":48.603,"p50":53.244,"p90":57.727},{"qi":21,"p10":48.324,"p50":53.086,"p90":57.654},{"qi":22,"p10":48.064,"p50":52.918,"p90":57.616},{"qi":23,"p10":47.772,"p50":52.73,"p90":57.572},{"qi":24,"p10":47.476,"p50":52.569,"p90":57.502},{"qi":25,"p10":47.18,"p50":52.394,"p90":57.434},{"qi":26,"p10":46.888,"p50":52.233,"p90":57.398},{"qi":27,"p10":46.605,"p50":52.056,"p90":57.345},{"qi":28,"p10":46.352,"p50":51.885,"p90":57.284},{"qi":29,"p10":46.034,"p50":51.716,"p90":57.225},{"qi":30,"p10":45.761,"p50":51.537,"p90":57.171},{"qi":31,"p10":45.482,"p50":51.362,"p90":57.111},{"qi":32,"p10":45.163,"p50":51.204,"p90":57.059},{"qi":33,"p10":44.885,"p50":51.036,"p90":56.993},{"qi":34,"p10":44.597,"p50":50.864,"p90":56.95},{"qi":35,"p10":44.341,"p50":50.708,"p90":56.877},{"qi":36,"p10":44.073,"p50":50.536,"p90":56.815},{"qi":37,"p10":43.84,"p50":50.364,"p90":56.759}],"parity":{"tolerance":{"level":0.03,"usd":0.35,"cny":0.35,"allied_share":0.6},"passed":true,"rows":[{"pathway":"accretion","quantity":"United States, 2035, USD m","engine":989871,"published":989392,"deviation":"0.05 %","ok":true},{"pathway":"accretion","quantity":"China, 2035, USD m","engine":564476,"published":564319,"deviation":"0.03 %","ok":true},{"pathway":"accretion","quantity":"Indo-Pacific allies, 2035, USD m","engine":219132,"published":218998,"deviation":"0.06 %","ok":true},{"pathway":"accretion","quantity":"NATO Europe, 2035, USD m","engine":641861,"published":642906,"deviation":"-0.16 %","ok":true},{"pathway":"accretion","quantity":"Hedging middle powers, 2035, USD m","engine":331274,"published":331556,"deviation":"-0.09 %","ok":true},{"pathway":"accretion","quantity":"Rest of world, 2035, USD m","engine":999361,"published":995993,"deviation":"0.34 %","ok":true},{"pathway":"accretion","quantity":"US dollar reserve share, 2035-Q4, percent","engine":50.36,"published":50.349,"deviation":"0.02 pp","ok":true},{"pathway":"accretion","quantity":"Renminbi reserve share, 2035-Q4, percent","engine":4.59,"published":4.626,"deviation":"-0.04 pp","ok":true},{"pathway":"accretion","quantity":"Allied share of world expenditure, 2035, percent","engine":22.91,"published":22.93,"deviation":"-0.02 pp","ok":true},{"pathway":"retrenchment","quantity":"United States, 2035, USD m","engine":607760,"published":609635,"deviation":"-0.31 %","ok":true},{"pathway":"retrenchment","quantity":"China, 2035, USD m","engine":566593,"published":572125,"deviation":"-0.97 %","ok":true},{"pathway":"retrenchment","quantity":"Indo-Pacific allies, 2035, USD m","engine":212068,"published":212493,"deviation":"-0.20 %","ok":true},{"pathway":"retrenchment","quantity":"NATO Europe, 2035, USD m","engine":568439,"published":568676,"deviation":"-0.04 %","ok":true},{"pathway":"retrenchment","quantity":"Hedging middle powers, 2035, USD m","engine":305037,"published":305451,"deviation":"-0.14 %","ok":true},{"pathway":"retrenchment","quantity":"Rest of world, 2035, USD m","engine":997085,"published":996979,"deviation":"0.01 %","ok":true},{"pathway":"retrenchment","quantity":"US dollar reserve share, 2035-Q4, percent","engine":52.07,"published":52.031,"deviation":"0.04 pp","ok":true},{"pathway":"retrenchment","quantity":"Renminbi reserve share, 2035-Q4, percent","engine":5.05,"published":5.067,"deviation":"-0.01 pp","ok":true},{"pathway":"retrenchment","quantity":"Allied share of world expenditure, 2035, percent","engine":23.89,"published":23.85,"deviation":"0.04 pp","ok":true},{"pathway":"demonstration","quantity":"United States, 2035, USD m","engine":989871,"published":989870,"deviation":"0.00 %","ok":true},{"pathway":"demonstration","quantity":"China, 2035, USD m","engine":567478,"published":570085,"deviation":"-0.46 %","ok":true},{"pathway":"demonstration","quantity":"Indo-Pacific allies, 2035, USD m","engine":219367,"published":219344,"deviation":"0.01 %","ok":true},{"pathway":"demonstration","quantity":"NATO Europe, 2035, USD m","engine":758969,"published":761695,"deviation":"-0.36 %","ok":true},{"pathway":"demonstration","quantity":"Hedging middle powers, 2035, USD m","engine":375515,"published":374256,"deviation":"0.34 %","ok":true},{"pathway":"demonstration","quantity":"Rest of world, 2035, USD m","engine":999550,"published":1001515,"deviation":"-0.20 %","ok":true},{"pathway":"demonstration","quantity":"US dollar reserve share, 2035-Q4, percent","engine":50.83,"published":50.869,"deviation":"-0.04 pp","ok":true},{"pathway":"demonstration","quantity":"Renminbi reserve share, 2035-Q4, percent","engine":0.92,"published":0.897,"deviation":"0.02 pp","ok":true},{"pathway":"demonstration","quantity":"Allied share of world expenditure, 2035, percent","engine":24.99,"published":24.94,"deviation":"0.05 pp","ok":true}]}};
 const E = Engine, M = PAYLOAD.model, D = PAYLOAD.design, P = E.prepare(PAYLOAD);
 const US = "United States", CN = "China", EU = "NATO Europe", IP = "Indo-Pacific allies";
 const SEATS = D.seat_order;
@@ -569,6 +601,22 @@ const world = (lvl) => M.blocks.reduce((a, b) => a + lvl[b], 0);
 const alliedSum = (lvl) => lvl[EU] + lvl[IP];
 const coalition = (lvl) => D.coalition.reduce((a, b) => a + lvl[b], 0);
 const holder = (b) => !SEATS.includes(b) ? "model" : G.human[b] ? "committee" : "model";
+
+const refQ = (key, q) => REF.dist[key][REF.probs.findIndex((x) => Math.abs(x - q) < 1e-9)];
+const refMed = (key) => refQ(key, 0.5);
+const limit = (seat) => refQ("cum:" + seat, D.resource_quantile);
+const opWord = (o) => (o.op === ">=" ? "at or above " : "at or below ") + f(refMed(o.measure), o.dp);
+const met = (o, v) => (o.op === ">=" ? v >= refMed(o.measure) : v <= refMed(o.measure));
+const OUTCOME_RULE = "Favorable: every objective met and cumulative outlays within the resource limit. Mixed: at least one objective met. Unfavorable: no objective met.";
+
+/* Objectives table for a seat. cols adds cells per objective; tail adds the resource row cells. */
+function missionTable(seat, head, cols, tail) {
+  return `<div class="scroll"><table>
+    <thead><tr><th>Objective</th><th class="r">Threshold</th>${head}</tr></thead>
+    <tbody>${D.seats[seat].objectives.map((o) => `<tr><td>${o.label}</td><td class="r nw">${opWord(o)}</td>${cols(o)}</tr>`).join("")}
+    <tr><td>Resource limit: cumulative outlays, ${D.start_year} to ${D.horizon}, billions</td><td class="r nw">at or below ${bn(limit(seat))}</td>${tail}</tr></tbody>
+  </table></div>`;
+}
 
 function period(k) {
   const ys = D.periods[k].years, dy = ys[0] - 1;
@@ -620,7 +668,10 @@ function staffEstimate(seat, pi, draft) {
     fixed[y] = { [seat]: draft.g };
     if (seat === CN && draft.event === y) fixed[y].event = true;
   });
+  const obs = [];
+  for (let y = D.start_year; y <= pi.pubYear; y++) obs.push(G.recs[y].g[US]);
   return E.estimate(P, {
+    prior: seat !== US ? E.pathwayPosterior(P, obs) : undefined,
     seed: G.seed * 7919 + pi.k * 101 + SEATS.indexOf(seat) * 13 + 17,
     n: D.staff_draws, start, fixed, endYear: pi.endYear, usdQ: pi.usdQ,
     growthYear: pi.growthYear, usModel: seat !== US, cnModel: seat !== CN,
@@ -755,6 +806,12 @@ function front() {
     <div class="btnrow"><button class="btn primary" id="convene">Convene the exercise</button></div>
   </div>
 
+  <h2>Goals, objectives, and favorable outcomes</h2>
+  <p class="measure">Each seat has one goal, two objectives measured at ${D.horizon}, and one resource limit. ${OUTCOME_RULE}</p>
+  ${SEATS.map((s) => `<h3 style="color:${COLOR[s]}">${s}</h3>
+    <p class="measure">Goal. ${D.seats[s].goal}</p>${missionTable(s, "", () => "", "")}`).join("")}
+  <p class="quiet measure">Each threshold is the median at ${D.horizon} of the reference distribution: the accretion pathway with every seat run by the model, ${REF.draws.toLocaleString("en-US")} draws. The resource limit is the ${Math.round(100 * D.resource_quantile)}th percentile of cumulative outlays in the same distribution. The coalition is the United States, NATO Europe, and the Indo-Pacific allies. Goals, objectives, and limits are design assumptions.</p>
+
   <h2>Reference path</h2>
   <div id="c-ref" class="chart"></div>
   <p class="quiet measure">Observed outlays to ${M.base_year}, then the median of the accretion pathway with every seat run by the model (${REF.draws.toLocaleString("en-US")} draws). Objectives and debrief comparisons are stated against this reference. Billions of constant 2024 US dollars.</p>
@@ -774,8 +831,8 @@ function front() {
       <h3>Assumed by the exercise</h3>
       <ul class="plain">
         <li>A committee's rate is realized exactly. It replaces the model equation and its residual for that seat.</li>
-        <li>Seats run by the model draw one of three pathways with equal probability. The pathway is sealed until the debrief.</li>
-        <li>Objectives are stated against the median of the accretion pathway with every seat run by the model. They are stylized interests, not findings.</li>
+        <li>Seats run by the model draw one of three pathways with equal probability. The pathway is sealed until the debrief. The staff revise the probabilities on published US growth.</li>
+        <li>Goals, objectives, and resource limits. Thresholds come from the reference distribution; the choice of objectives is a design assumption.</li>
         <li>A demonstration repeats one episode. Committees holding allied seats choose their own response to it.</li>
       </ul>
     </div>
@@ -853,6 +910,9 @@ function openSeat() {
   const window_ = seat === CN && !now.eventYear
     ? pi.ys.filter((y) => y >= M.event_years[0] && y <= M.event_years[1]) : [];
   const q = G.q[pi.pubQ], many = G.order.length > 1;
+  const pubState = publishedState(pi), pubMeas = E.measures(P, pubState);
+  let spent = 0;
+  for (let y = D.start_year; y <= pi.decisionYear; y++) spent += G.states[y].lvl[seat];
   const tq = E.qLabel(pi.usdQ);
 
   show(`
@@ -860,19 +920,28 @@ function openSeat() {
     <span class="when">Period ${pi.roman}, ${pi.ys.join(" and ")}. Decision point November ${pi.decisionYear}</span></div>
 
   <section class="para"><span class="n">1.</span><div>
+    <h2>Mission</h2>
+    <p class="measure">Goal. ${sd.goal}</p>
+    ${missionTable(seat, `<th class="r">Published, ${pi.pubYear}</th>`,
+      (o) => `<td class="r">${f(pubMeas[o.measure], o.dp)}</td>`,
+      `<td class="r nw">${bn(spent)} through ${pi.decisionYear}</td>`)}
+    <p class="quiet measure">${OUTCOME_RULE} Reserve shares are as published at ${E.qLabel(pi.pubQ)}.</p>
+  </div></section>
+
+  <section class="para"><span class="n">2.</span><div>
     <h2>Published record</h2>
     ${recordTable(pi.pubYear, seat)}
     <p class="measure">Expenditure for ${pi.decisionYear} publishes in April ${pi.decisionYear + 1}. Ratios for ${pi.pubYear}: China to United States ${f(pub.lvl[CN] / pub.lvl[US], 3)}; coalition to China ${f(coalition(pub.lvl) / pub.lvl[CN], 2)}. Reserves at ${E.qLabel(pi.pubQ)}: US dollar ${f(q.usd, 2)} percent and renminbi ${f(q.cny, 2)} percent of allocated reserves.</p>
     ${circularHtml(now) || `<p class="quiet">No demonstration is recorded.</p>`}
   </div></section>
 
-  <section class="para"><span class="n">2.</span><div>
+  <section class="para"><span class="n">3.</span><div>
     <h2>Own program</h2>
     <p class="measure">Outlays in ${pi.decisionYear}: ${bn(now.lvl[seat])} billion, real growth ${sg(growthOf(pi.decisionYear, seat))} percent${G.k === 0 ? ", as resolved by the model for the year in progress" : ", as committed in period " + D.periods[G.k - 1].roman}. This figure is known to this committee and is not yet published.</p>
   </div></section>
 
   <div class="grid2 seatgrid">
-  <section class="para"><span class="n">3.</span><div>
+  <section class="para"><span class="n">4.</span><div>
     <h2>Commitment</h2>
     <div class="panel sheet" style="margin-top:.4rem">
       <label for="g" class="quiet">Real growth per year, ${pi.ys.join(" and ")}</label>
@@ -890,7 +959,7 @@ function openSeat() {
     </div>
   </div></section>
 
-  <section class="para"><span class="n">4.</span><div>
+  <section class="para"><span class="n">5.</span><div>
     <h2>Staff estimate and stated intervals</h2>
     <div id="fan" class="chart"></div>
     <div class="scroll"><table>
@@ -904,7 +973,7 @@ function openSeat() {
           <td class="r"><input class="iv" type="number" step="0.1" id="a1" aria-label="Allied growth, upper bound"></td></tr>
         <tr><td>China to United States ratio, ${pi.endYear}</td><td class="r nw" id="sr"></td><td></td><td></td></tr>
       </tbody>
-      <caption>Staff range is the 10th to 90th percentile of ${D.staff_draws} draws of the model from the published record, given this commitment. Every other seat is taken at its model equation, with the three pathways at equal probability. The staff cannot see the sealed record or another committee's sheet.</caption>
+      <caption>Staff range is the 10th to 90th percentile of ${D.staff_draws} draws of the model from the published record, given this commitment. Every other seat is taken at its model equation. Pathway probabilities start equal and are revised on published US growth. The staff cannot see the sealed record or another committee's sheet.</caption>
     </table></div>
   </div></section>
   </div>
@@ -924,11 +993,13 @@ function openSeat() {
     draft.est = staffEstimate(seat, pi, draft);
     const e = draft.est;
     $("gv").textContent = sg(draft.g);
-    let lv = now.lvl[seat];
+    let lv = now.lvl[seat], cumTo = spent;
+    pi.ys.forEach(() => { lv *= 1 + draft.g / 100; cumTo += lv; });
+    lv = now.lvl[seat];
     $("outlays").innerHTML = `<table><thead><tr><th>Year</th><th class="r">Outlays</th><th class="r">Change from ${pi.decisionYear}</th></tr></thead><tbody>` +
       pi.ys.map((y) => { lv *= 1 + draft.g / 100;
         return `<tr><td>${y}</td><td class="r">${bn(lv)}</td><td class="r">${sbn(lv - now.lvl[seat], 1)}</td></tr>`; }).join("") +
-      `</tbody><caption>Billions of constant 2024 US dollars.</caption></table>`;
+      `</tbody><caption>Billions of constant 2024 US dollars. Cumulative outlays, ${D.start_year} to ${pi.endYear}, under this commitment: ${bn(cumTo)}. Resource limit for ${D.start_year} to ${D.horizon}: ${bn(limit(seat))}.</caption></table>`;
     $("su").textContent = `${f(e.usd[0], 1)} to ${f(e.usd[2], 1)}`;
     $("sa").textContent = `${sg(e.growth[0], 1)} to ${sg(e.growth[2], 1)}`;
     $("sr").textContent = `${f(e.ratio[0], 3)} to ${f(e.ratio[2], 3)}`;
@@ -1043,14 +1114,12 @@ function pctl(key, v) {
   const p = E.percentileOf(REF.dist[key], REF.probs, v);
   return p <= 5 ? "below 5th" : p >= 95 ? "above 95th" : f(p, 0);
 }
-const refMed = (key) => REF.dist[key][REF.probs.indexOf(0.5)];
-
 function debrief() {
   const years = [], recs = [];
   for (let y = D.start_year; y <= D.horizon; y++) { years.push(y); recs.push(G.recs[y]); }
   const end = G.states[D.horizon], cum = {};
   SEATS.forEach((s) => { cum[s] = years.reduce((a, y) => a + G.states[y].lvl[s], 0); });
-  const meas = E.measures(P, end, cum), W = G.W;
+  const meas = E.measures(P, end, cum), W = G.W, outcomes = {};
   const cls = E.classify(P, recs, end.eventYear);
   const MEAS = [["cn_us", "China to United States expenditure ratio", 3, ""],
     ["coalition_cn", "Coalition to China expenditure ratio", 2, ""],
@@ -1066,21 +1135,21 @@ function debrief() {
     : (end.eventYear ? `The sealed pathway placed a demonstration in ${end.eventYear}; it fell in ${E.qLabel(end.eventQ)}.` : "The sealed pathway contained no demonstration."));
 
   const objectives = G.order.map((s) => {
-    const rows = D.seats[s].objectives.map((o) => {
-      const v = meas[o.measure], r = refMed(o.measure), met = o.op === ">=" ? v >= r : v <= r;
-      const dp = MEAS.find((m) => m[0] === o.measure)[2];
-      return `<tr><td>${o.label}</td><td class="r">${f(v, dp)}</td><td class="r">${f(r, dp)}</td><td class="r ${met ? "ok" : "miss"}">${met ? "met" : "not met"}</td></tr>`;
-    }).join("");
-    const c = cum[s], cr = refMed("cum:" + s);
+    const obj = D.seats[s].objectives, nMet = obj.filter((o) => met(o, meas[o.measure])).length;
+    const c = cum[s], within = c <= limit(s);
+    const outcome = nMet === obj.length && within ? "favorable" : nMet > 0 ? "mixed" : "unfavorable";
     let n = 0, hit = 0, sc = 0, st = 0;
     G.scores.forEach((k) => ["usd", "grow"].forEach((q) => {
       n += 1; hit += k.seats[s][q].hit ? 1 : 0; sc += k.seats[s][q].score;
       st += k.seats[s][q === "usd" ? "staffUsd" : "staffGrow"].score; }));
-    return `<h3 style="color:${COLOR[s]}">${s} committee</h3>
-      <div class="scroll"><table><thead><tr><th>Objective</th><th class="r">Outcome</th><th class="r">Reference median</th><th class="r">Result</th></tr></thead><tbody>${rows}
-      <tr><td>Cumulative outlays, ${D.start_year} to ${D.horizon}, billions</td><td class="r">${bn(c)}</td><td class="r">${bn(cr)}</td><td class="r">${sbn(c - cr, 1)} (${sg(100 * (c / cr - 1), 1)} percent)</td></tr>
-      <tr><td>Interval statements inside, of ${n}</td><td class="r">${hit}</td><td class="r">${f(n * D.coverage, 1)} expected</td><td class="r">mean score ${f(sc / n, 1)}; staff ${f(st / n, 1)}</td></tr>
-      </tbody></table></div>`;
+    outcomes[s] = { outcome, objectives_met: nMet, cumulative_outlays_musd: c, resource_limit_musd: limit(s),
+                    intervals_inside: hit, intervals: n, mean_score: sc / n, staff_mean_score: st / n };
+    return `<h3 style="color:${COLOR[s]}">${s} committee: ${outcome} outcome</h3>
+      <p class="measure">Goal. ${D.seats[s].goal}</p>
+      ${missionTable(s, `<th class="r">Outcome</th><th class="r">Result</th>`,
+        (o) => `<td class="r">${f(meas[o.measure], o.dp)}</td><td class="r ${met(o, meas[o.measure]) ? "ok" : "miss"}">${met(o, meas[o.measure]) ? "met" : "not met"}</td>`,
+        `<td class="r">${bn(c)}</td><td class="r ${within ? "ok" : "miss"}">${within ? "within" : "over by " + bn(c - limit(s))}</td>`)}
+      <p class="measure">Interval statements: ${hit} of ${n} inside (${f(n * D.coverage, 1)} expected at ${Math.round(100 * D.coverage)} percent). Mean score ${f(sc / n, 1)}; staff ${f(st / n, 1)}. Cumulative outlays against the reference median: ${sbn(c - refMed("cum:" + s), 1)} billion.</p>`;
   }).join("");
 
   const elicit = G.order.map((s) => {
@@ -1124,7 +1193,7 @@ function debrief() {
   </table></div>
 
   <h2>Committees</h2>
-  <p class="measure">The exercise names no winner. Each committee is reported on three separate axes: its stated objectives, what it spent, and the calibration of its interval statements. The objectives are design assumptions.</p>
+  <p class="measure">${OUTCOME_RULE} Outcomes are assessed seat by seat and are not ranked against each other. Interval calibration is reported separately.</p>
   ${objectives}
 
   <details>
@@ -1183,7 +1252,7 @@ function debrief() {
       years: years.map((y) => ({ year: y, growth_pct: G.recs[y].g, level_musd: G.states[y].lvl, model: G.recs[y].model })),
       quarters: Object.keys(G.q).map(Number).sort((a, b) => a - b).filter((qi) => qi >= 0)
         .map((qi) => ({ quarter: E.qLabel(qi), usd_pct: G.q[qi].usd, cny_pct: G.q[qi].cny })),
-      position: meas, reference_medians: Object.fromEntries(Object.keys(REF.dist).map((k) => [k, refMed(k)])) };
+      outcomes, position: meas, reference_medians: Object.fromEntries(Object.keys(REF.dist).map((k) => [k, refMed(k)])) };
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(rec, null, 1)], { type: "application/json" }));
     a.download = `committee-exercise-${G.seed}.json`;

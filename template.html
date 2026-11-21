@@ -229,6 +229,22 @@ const alliedSum = (lvl) => lvl[EU] + lvl[IP];
 const coalition = (lvl) => D.coalition.reduce((a, b) => a + lvl[b], 0);
 const holder = (b) => !SEATS.includes(b) ? "model" : G.human[b] ? "committee" : "model";
 
+const refQ = (key, q) => REF.dist[key][REF.probs.findIndex((x) => Math.abs(x - q) < 1e-9)];
+const refMed = (key) => refQ(key, 0.5);
+const limit = (seat) => refQ("cum:" + seat, D.resource_quantile);
+const opWord = (o) => (o.op === ">=" ? "at or above " : "at or below ") + f(refMed(o.measure), o.dp);
+const met = (o, v) => (o.op === ">=" ? v >= refMed(o.measure) : v <= refMed(o.measure));
+const OUTCOME_RULE = "Favorable: every objective met and cumulative outlays within the resource limit. Mixed: at least one objective met. Unfavorable: no objective met.";
+
+/* Objectives table for a seat. cols adds cells per objective; tail adds the resource row cells. */
+function missionTable(seat, head, cols, tail) {
+  return `<div class="scroll"><table>
+    <thead><tr><th>Objective</th><th class="r">Threshold</th>${head}</tr></thead>
+    <tbody>${D.seats[seat].objectives.map((o) => `<tr><td>${o.label}</td><td class="r nw">${opWord(o)}</td>${cols(o)}</tr>`).join("")}
+    <tr><td>Resource limit: cumulative outlays, ${D.start_year} to ${D.horizon}, billions</td><td class="r nw">at or below ${bn(limit(seat))}</td>${tail}</tr></tbody>
+  </table></div>`;
+}
+
 function period(k) {
   const ys = D.periods[k].years, dy = ys[0] - 1;
   return { k, ys, roman: D.periods[k].roman, decisionYear: dy, pubYear: dy - 1,
@@ -279,7 +295,10 @@ function staffEstimate(seat, pi, draft) {
     fixed[y] = { [seat]: draft.g };
     if (seat === CN && draft.event === y) fixed[y].event = true;
   });
+  const obs = [];
+  for (let y = D.start_year; y <= pi.pubYear; y++) obs.push(G.recs[y].g[US]);
   return E.estimate(P, {
+    prior: seat !== US ? E.pathwayPosterior(P, obs) : undefined,
     seed: G.seed * 7919 + pi.k * 101 + SEATS.indexOf(seat) * 13 + 17,
     n: D.staff_draws, start, fixed, endYear: pi.endYear, usdQ: pi.usdQ,
     growthYear: pi.growthYear, usModel: seat !== US, cnModel: seat !== CN,
@@ -414,6 +433,12 @@ function front() {
     <div class="btnrow"><button class="btn primary" id="convene">Convene the exercise</button></div>
   </div>
 
+  <h2>Goals, objectives, and favorable outcomes</h2>
+  <p class="measure">Each seat has one goal, two objectives measured at ${D.horizon}, and one resource limit. ${OUTCOME_RULE}</p>
+  ${SEATS.map((s) => `<h3 style="color:${COLOR[s]}">${s}</h3>
+    <p class="measure">Goal. ${D.seats[s].goal}</p>${missionTable(s, "", () => "", "")}`).join("")}
+  <p class="quiet measure">Each threshold is the median at ${D.horizon} of the reference distribution: the accretion pathway with every seat run by the model, ${REF.draws.toLocaleString("en-US")} draws. The resource limit is the ${Math.round(100 * D.resource_quantile)}th percentile of cumulative outlays in the same distribution. The coalition is the United States, NATO Europe, and the Indo-Pacific allies. Goals, objectives, and limits are design assumptions.</p>
+
   <h2>Reference path</h2>
   <div id="c-ref" class="chart"></div>
   <p class="quiet measure">Observed outlays to ${M.base_year}, then the median of the accretion pathway with every seat run by the model (${REF.draws.toLocaleString("en-US")} draws). Objectives and debrief comparisons are stated against this reference. Billions of constant 2024 US dollars.</p>
@@ -433,8 +458,8 @@ function front() {
       <h3>Assumed by the exercise</h3>
       <ul class="plain">
         <li>A committee's rate is realized exactly. It replaces the model equation and its residual for that seat.</li>
-        <li>Seats run by the model draw one of three pathways with equal probability. The pathway is sealed until the debrief.</li>
-        <li>Objectives are stated against the median of the accretion pathway with every seat run by the model. They are stylized interests, not findings.</li>
+        <li>Seats run by the model draw one of three pathways with equal probability. The pathway is sealed until the debrief. The staff revise the probabilities on published US growth.</li>
+        <li>Goals, objectives, and resource limits. Thresholds come from the reference distribution; the choice of objectives is a design assumption.</li>
         <li>A demonstration repeats one episode. Committees holding allied seats choose their own response to it.</li>
       </ul>
     </div>
@@ -512,6 +537,9 @@ function openSeat() {
   const window_ = seat === CN && !now.eventYear
     ? pi.ys.filter((y) => y >= M.event_years[0] && y <= M.event_years[1]) : [];
   const q = G.q[pi.pubQ], many = G.order.length > 1;
+  const pubState = publishedState(pi), pubMeas = E.measures(P, pubState);
+  let spent = 0;
+  for (let y = D.start_year; y <= pi.decisionYear; y++) spent += G.states[y].lvl[seat];
   const tq = E.qLabel(pi.usdQ);
 
   show(`
@@ -519,19 +547,28 @@ function openSeat() {
     <span class="when">Period ${pi.roman}, ${pi.ys.join(" and ")}. Decision point November ${pi.decisionYear}</span></div>
 
   <section class="para"><span class="n">1.</span><div>
+    <h2>Mission</h2>
+    <p class="measure">Goal. ${sd.goal}</p>
+    ${missionTable(seat, `<th class="r">Published, ${pi.pubYear}</th>`,
+      (o) => `<td class="r">${f(pubMeas[o.measure], o.dp)}</td>`,
+      `<td class="r nw">${bn(spent)} through ${pi.decisionYear}</td>`)}
+    <p class="quiet measure">${OUTCOME_RULE} Reserve shares are as published at ${E.qLabel(pi.pubQ)}.</p>
+  </div></section>
+
+  <section class="para"><span class="n">2.</span><div>
     <h2>Published record</h2>
     ${recordTable(pi.pubYear, seat)}
     <p class="measure">Expenditure for ${pi.decisionYear} publishes in April ${pi.decisionYear + 1}. Ratios for ${pi.pubYear}: China to United States ${f(pub.lvl[CN] / pub.lvl[US], 3)}; coalition to China ${f(coalition(pub.lvl) / pub.lvl[CN], 2)}. Reserves at ${E.qLabel(pi.pubQ)}: US dollar ${f(q.usd, 2)} percent and renminbi ${f(q.cny, 2)} percent of allocated reserves.</p>
     ${circularHtml(now) || `<p class="quiet">No demonstration is recorded.</p>`}
   </div></section>
 
-  <section class="para"><span class="n">2.</span><div>
+  <section class="para"><span class="n">3.</span><div>
     <h2>Own program</h2>
     <p class="measure">Outlays in ${pi.decisionYear}: ${bn(now.lvl[seat])} billion, real growth ${sg(growthOf(pi.decisionYear, seat))} percent${G.k === 0 ? ", as resolved by the model for the year in progress" : ", as committed in period " + D.periods[G.k - 1].roman}. This figure is known to this committee and is not yet published.</p>
   </div></section>
 
   <div class="grid2 seatgrid">
-  <section class="para"><span class="n">3.</span><div>
+  <section class="para"><span class="n">4.</span><div>
     <h2>Commitment</h2>
     <div class="panel sheet" style="margin-top:.4rem">
       <label for="g" class="quiet">Real growth per year, ${pi.ys.join(" and ")}</label>
@@ -549,7 +586,7 @@ function openSeat() {
     </div>
   </div></section>
 
-  <section class="para"><span class="n">4.</span><div>
+  <section class="para"><span class="n">5.</span><div>
     <h2>Staff estimate and stated intervals</h2>
     <div id="fan" class="chart"></div>
     <div class="scroll"><table>
@@ -563,7 +600,7 @@ function openSeat() {
           <td class="r"><input class="iv" type="number" step="0.1" id="a1" aria-label="Allied growth, upper bound"></td></tr>
         <tr><td>China to United States ratio, ${pi.endYear}</td><td class="r nw" id="sr"></td><td></td><td></td></tr>
       </tbody>
-      <caption>Staff range is the 10th to 90th percentile of ${D.staff_draws} draws of the model from the published record, given this commitment. Every other seat is taken at its model equation, with the three pathways at equal probability. The staff cannot see the sealed record or another committee's sheet.</caption>
+      <caption>Staff range is the 10th to 90th percentile of ${D.staff_draws} draws of the model from the published record, given this commitment. Every other seat is taken at its model equation. Pathway probabilities start equal and are revised on published US growth. The staff cannot see the sealed record or another committee's sheet.</caption>
     </table></div>
   </div></section>
   </div>
@@ -583,11 +620,13 @@ function openSeat() {
     draft.est = staffEstimate(seat, pi, draft);
     const e = draft.est;
     $("gv").textContent = sg(draft.g);
-    let lv = now.lvl[seat];
+    let lv = now.lvl[seat], cumTo = spent;
+    pi.ys.forEach(() => { lv *= 1 + draft.g / 100; cumTo += lv; });
+    lv = now.lvl[seat];
     $("outlays").innerHTML = `<table><thead><tr><th>Year</th><th class="r">Outlays</th><th class="r">Change from ${pi.decisionYear}</th></tr></thead><tbody>` +
       pi.ys.map((y) => { lv *= 1 + draft.g / 100;
         return `<tr><td>${y}</td><td class="r">${bn(lv)}</td><td class="r">${sbn(lv - now.lvl[seat], 1)}</td></tr>`; }).join("") +
-      `</tbody><caption>Billions of constant 2024 US dollars.</caption></table>`;
+      `</tbody><caption>Billions of constant 2024 US dollars. Cumulative outlays, ${D.start_year} to ${pi.endYear}, under this commitment: ${bn(cumTo)}. Resource limit for ${D.start_year} to ${D.horizon}: ${bn(limit(seat))}.</caption></table>`;
     $("su").textContent = `${f(e.usd[0], 1)} to ${f(e.usd[2], 1)}`;
     $("sa").textContent = `${sg(e.growth[0], 1)} to ${sg(e.growth[2], 1)}`;
     $("sr").textContent = `${f(e.ratio[0], 3)} to ${f(e.ratio[2], 3)}`;
@@ -702,14 +741,12 @@ function pctl(key, v) {
   const p = E.percentileOf(REF.dist[key], REF.probs, v);
   return p <= 5 ? "below 5th" : p >= 95 ? "above 95th" : f(p, 0);
 }
-const refMed = (key) => REF.dist[key][REF.probs.indexOf(0.5)];
-
 function debrief() {
   const years = [], recs = [];
   for (let y = D.start_year; y <= D.horizon; y++) { years.push(y); recs.push(G.recs[y]); }
   const end = G.states[D.horizon], cum = {};
   SEATS.forEach((s) => { cum[s] = years.reduce((a, y) => a + G.states[y].lvl[s], 0); });
-  const meas = E.measures(P, end, cum), W = G.W;
+  const meas = E.measures(P, end, cum), W = G.W, outcomes = {};
   const cls = E.classify(P, recs, end.eventYear);
   const MEAS = [["cn_us", "China to United States expenditure ratio", 3, ""],
     ["coalition_cn", "Coalition to China expenditure ratio", 2, ""],
@@ -725,21 +762,21 @@ function debrief() {
     : (end.eventYear ? `The sealed pathway placed a demonstration in ${end.eventYear}; it fell in ${E.qLabel(end.eventQ)}.` : "The sealed pathway contained no demonstration."));
 
   const objectives = G.order.map((s) => {
-    const rows = D.seats[s].objectives.map((o) => {
-      const v = meas[o.measure], r = refMed(o.measure), met = o.op === ">=" ? v >= r : v <= r;
-      const dp = MEAS.find((m) => m[0] === o.measure)[2];
-      return `<tr><td>${o.label}</td><td class="r">${f(v, dp)}</td><td class="r">${f(r, dp)}</td><td class="r ${met ? "ok" : "miss"}">${met ? "met" : "not met"}</td></tr>`;
-    }).join("");
-    const c = cum[s], cr = refMed("cum:" + s);
+    const obj = D.seats[s].objectives, nMet = obj.filter((o) => met(o, meas[o.measure])).length;
+    const c = cum[s], within = c <= limit(s);
+    const outcome = nMet === obj.length && within ? "favorable" : nMet > 0 ? "mixed" : "unfavorable";
     let n = 0, hit = 0, sc = 0, st = 0;
     G.scores.forEach((k) => ["usd", "grow"].forEach((q) => {
       n += 1; hit += k.seats[s][q].hit ? 1 : 0; sc += k.seats[s][q].score;
       st += k.seats[s][q === "usd" ? "staffUsd" : "staffGrow"].score; }));
-    return `<h3 style="color:${COLOR[s]}">${s} committee</h3>
-      <div class="scroll"><table><thead><tr><th>Objective</th><th class="r">Outcome</th><th class="r">Reference median</th><th class="r">Result</th></tr></thead><tbody>${rows}
-      <tr><td>Cumulative outlays, ${D.start_year} to ${D.horizon}, billions</td><td class="r">${bn(c)}</td><td class="r">${bn(cr)}</td><td class="r">${sbn(c - cr, 1)} (${sg(100 * (c / cr - 1), 1)} percent)</td></tr>
-      <tr><td>Interval statements inside, of ${n}</td><td class="r">${hit}</td><td class="r">${f(n * D.coverage, 1)} expected</td><td class="r">mean score ${f(sc / n, 1)}; staff ${f(st / n, 1)}</td></tr>
-      </tbody></table></div>`;
+    outcomes[s] = { outcome, objectives_met: nMet, cumulative_outlays_musd: c, resource_limit_musd: limit(s),
+                    intervals_inside: hit, intervals: n, mean_score: sc / n, staff_mean_score: st / n };
+    return `<h3 style="color:${COLOR[s]}">${s} committee: ${outcome} outcome</h3>
+      <p class="measure">Goal. ${D.seats[s].goal}</p>
+      ${missionTable(s, `<th class="r">Outcome</th><th class="r">Result</th>`,
+        (o) => `<td class="r">${f(meas[o.measure], o.dp)}</td><td class="r ${met(o, meas[o.measure]) ? "ok" : "miss"}">${met(o, meas[o.measure]) ? "met" : "not met"}</td>`,
+        `<td class="r">${bn(c)}</td><td class="r ${within ? "ok" : "miss"}">${within ? "within" : "over by " + bn(c - limit(s))}</td>`)}
+      <p class="measure">Interval statements: ${hit} of ${n} inside (${f(n * D.coverage, 1)} expected at ${Math.round(100 * D.coverage)} percent). Mean score ${f(sc / n, 1)}; staff ${f(st / n, 1)}. Cumulative outlays against the reference median: ${sbn(c - refMed("cum:" + s), 1)} billion.</p>`;
   }).join("");
 
   const elicit = G.order.map((s) => {
@@ -783,7 +820,7 @@ function debrief() {
   </table></div>
 
   <h2>Committees</h2>
-  <p class="measure">The exercise names no winner. Each committee is reported on three separate axes: its stated objectives, what it spent, and the calibration of its interval statements. The objectives are design assumptions.</p>
+  <p class="measure">${OUTCOME_RULE} Outcomes are assessed seat by seat and are not ranked against each other. Interval calibration is reported separately.</p>
   ${objectives}
 
   <details>
@@ -842,7 +879,7 @@ function debrief() {
       years: years.map((y) => ({ year: y, growth_pct: G.recs[y].g, level_musd: G.states[y].lvl, model: G.recs[y].model })),
       quarters: Object.keys(G.q).map(Number).sort((a, b) => a - b).filter((qi) => qi >= 0)
         .map((qi) => ({ quarter: E.qLabel(qi), usd_pct: G.q[qi].usd, cny_pct: G.q[qi].cny })),
-      position: meas, reference_medians: Object.fromEntries(Object.keys(REF.dist).map((k) => [k, refMed(k)])) };
+      outcomes, position: meas, reference_medians: Object.fromEntries(Object.keys(REF.dist).map((k) => [k, refMed(k)])) };
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(rec, null, 1)], { type: "application/json" }));
     a.download = `committee-exercise-${G.seed}.json`;
