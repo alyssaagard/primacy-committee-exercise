@@ -1,10 +1,6 @@
 # Committee Exercise
 
-A four-seat budget exercise on the estimated model of The Primacy Premium, 2026 to 2035.
-
-Alyssa I. Agard
-
-Play: https://alyssaagard.github.io/primacy-committee-exercise/
+The Committee Exercise is a four-seat budget exercise on the estimated model of The Primacy Premium, covering 2026 to 2035. It is played at https://primacy.alyssaagard.dev/committee-exercise/.
 
 ## What it is
 
@@ -22,9 +18,9 @@ Release 1.0.0 of this exercise used a separate simulation with coefficients set 
 
 ## What a session produces
 
-- A resolution after each period: newly published figures, any circular, and interval scores.
-- A debrief: the sealed pathway and coefficient draws, every block's path against a reference, each committee's outcome (favorable, mixed, or unfavorable) against its objectives and resource limit, interval calibration, and each commitment set against the model equation for that seat.
-- A downloadable record in JSON, with commitments, realized paths, sealed draws, and scores.
+- Each period ends with a resolution, which gives the newly published figures, any circular, and the interval scores.
+- The debrief gives the sealed pathway and coefficient draws, every block's path against a reference, each committee's outcome (favorable, mixed, or unfavorable) against its objectives and resource limit, the interval calibration, and each commitment set against the model equation for that seat.
+- The record can be downloaded in JSON, with commitments, realized paths, sealed draws, and scores.
 
 ## Estimated and assumed
 
@@ -51,7 +47,7 @@ Coefficients, covariance matrices, residuals, pathway rates, and the 2022 episod
 python build_data.py
 node reference.js
 python build_social.py
-python build_page.py
+python build_page.py --publish ../primacy-premium/committee-exercise
 python tests/playthrough.py
 ```
 
@@ -59,4 +55,4 @@ To move to a later release of the model, run `python build_data.py --model PATH`
 
 ## Citation and license
 
-Cite as given in `CITATION.cff`. Licensed CC BY-NC 4.0; see `LICENSE.md`. Source data remain subject to their publishers' terms.
+The author is Alyssa I. Agard. Cite the exercise as given in `CITATION.cff`. It is licensed CC BY-NC 4.0; see `LICENSE.md`. Source data remain subject to their publishers' terms.

@@ -8,15 +8,24 @@ sets the absolute site address that share card tags require. All other
 asset references on the page are relative.
 
     python build_page.py
-    SITE_URL=https://example.org/exercise python build_page.py
+    python build_page.py --publish ../primacy-premium/committee-exercise
+
+The page is served at https://primacy.alyssaagard.dev/committee-exercise/,
+from a folder of the model repository. The --publish option copies the page
+and its assets into that folder.
 
 Writes: index.html
 """
 
+import argparse
 import os
+import shutil
 from pathlib import Path
 
-SITE_URL = "https://alyssaagard.github.io/primacy-committee-exercise"
+SITE_URL = "https://primacy.alyssaagard.dev/committee-exercise"
+ASSETS = ["favicon.ico", "favicon-16x16.png", "favicon-32x32.png",
+          "apple-touch-icon.png", "android-chrome-192x192.png",
+          "android-chrome-512x512.png", "site.webmanifest"]
 SOCIAL_CARD = "social-card-photo.jpg"
 
 HERE = Path(__file__).resolve().parent
@@ -28,6 +37,10 @@ TOKENS = {
 
 
 def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--publish", type=Path,
+                    help="folder to copy the page and its assets into")
+    args = ap.parse_args()
     html = (HERE / "template.html").read_text(encoding="utf-8")
     for token, name in TOKENS.items():
         if html.count(token) != 1:
@@ -48,6 +61,11 @@ def main() -> None:
     out.write_text(html, encoding="utf-8")
     print(f"index.html written, {out.stat().st_size / 1024:.0f} KB; "
           f"site {site}; card {card}")
+    if args.publish:
+        args.publish.mkdir(parents=True, exist_ok=True)
+        for name in ["index.html", card] + ASSETS:
+            shutil.copyfile(HERE / name, args.publish / name)
+        print(f"published to {args.publish}")
 
 
 if __name__ == "__main__":

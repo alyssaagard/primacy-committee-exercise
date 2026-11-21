@@ -9,7 +9,7 @@ version: 2.1.0
 date-released: "2026-11-21"
 license: CC-BY-NC-4.0
 repository-code: "https://github.com/alyssaagard/primacy-committee-exercise"
-url: "https://alyssaagard.github.io/primacy-committee-exercise/"
+url: "https://primacy.alyssaagard.dev/committee-exercise/"
 abstract: >-
   A browser exercise in which up to four committees set real military
   expenditure for the United States, China, NATO Europe, and the

@@ -194,13 +194,15 @@ def design(m: dict) -> dict:
     burden = {"measure": "us_share_coalition", "op": ">=", "dp": 1,
               "label": "United States share of coalition expenditure, "
                        "2035, percent"}
-    allied_goal = ("Keep the coalition's expenditure margin over China "
-                   "while the United States continues to carry its share.")
+    allied_goal = ("{} to keep the coalition's expenditure margin over "
+                   "China while the United States continues to carry its "
+                   "share.")
     seats = {
         "United States": {
             "code": "us",
-            "goal": "Retain the expenditure margin over China and the "
-                    "reserve position of the dollar.",
+            "goal": "The United States seeks to retain its expenditure "
+                    "margin over China and the reserve position of the "
+                    "dollar.",
             "refs": [["Ten-year rate", rates["us_trend"]],
                      ["1988 to 1998 rate", rates["us_contraction"]],
                      ["No real change", 0.0]],
@@ -210,8 +212,9 @@ def design(m: dict) -> dict:
                  "label": "US dollar reserve share, 2035-Q4, percent"}]},
         "China": {
             "code": "cn",
-            "goal": "Close the expenditure gap with the United States and "
-                    "raise the reserve role of the renminbi.",
+            "goal": "China seeks to close the expenditure gap with the "
+                    "United States and to raise the reserve role of the "
+                    "renminbi.",
             "refs": [["Ten-year rate", rates["cn_trend"]],
                      ["2025 rate", rates["cn_last"]],
                      ["No real change", 0.0]],
@@ -219,9 +222,12 @@ def design(m: dict) -> dict:
                 dict(ratio, op=">="),
                 {"measure": "cny", "op": ">=", "dp": 2,
                  "label": "Renminbi reserve share, 2035-Q4, percent"}]},
-        "NATO Europe": {"code": "eu", "goal": allied_goal, "refs": [],
+        "NATO Europe": {"code": "eu", "refs": [],
+                        "goal": allied_goal.format("NATO Europe seeks"),
                         "objectives": [coal, burden]},
-        "Indo-Pacific allies": {"code": "ip", "goal": allied_goal, "refs": [],
+        "Indo-Pacific allies": {"code": "ip", "refs": [],
+                                "goal": allied_goal.format(
+                                    "The Indo-Pacific allies seek"),
                                 "objectives": [coal, burden]},
     }
     hist = m["history"]

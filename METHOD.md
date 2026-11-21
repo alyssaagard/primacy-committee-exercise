@@ -1,6 +1,6 @@
 # Method
 
-Committee Exercise, release 2.1.0. Alyssa I. Agard.
+This document describes release 2.1.0 of the Committee Exercise.
 
 ## 1. Purpose
 
@@ -8,11 +8,11 @@ The exercise places committees in the seats of the model published as [The Prima
 
 The exercise is a conditional forecasting instrument. Its output is what the estimated model implies given the commitments made. It does not state that any path will occur.
 
-It serves three uses:
+It serves three uses.
 
-1. Teaching. Participants see which outcomes respond to expenditure decisions in the estimated model and which do not.
-2. Elicitation. When a committee holds an allied seat, its commitments are recorded beside the value of the estimated allied response equation. The record shows where human judgment departs from the equation.
-3. Calibration practice. Each committee states intervals for two quantities each period and is scored on them.
+1. It is a teaching instrument. Participants see which outcomes respond to expenditure decisions in the estimated model and which do not.
+2. It is an elicitation instrument. When a committee holds an allied seat, its commitments are recorded beside the value of the estimated allied response equation, and the record shows where human judgment departs from the equation.
+3. It gives calibration practice. Each committee states intervals for two quantities each period and is scored on them.
 
 ## 2. Relation to release 1.0.0
 
@@ -65,15 +65,15 @@ The lags follow the sources. SIPRI publishes a year's expenditure the following 
 
 ### 5.1 Expenditure
 
-Annual real growth, in percent, for each block *b* in year *t*:
+Annual real growth, in percent, is set for each block as follows.
 
-- United States, run by the model: pathway rate plus residual. The rate is the compound rate for 2015 to 2025 (+1.03) under accretion and demonstration, and the 1988 to 1998 rate (−3.76) under retrenchment.
-- China, run by the model: the compound rate for 2015 to 2025 (+5.50) plus residual.
-- Allied tier, run by the model: `b0 + b_us * g_US(t-1) + b_cn * g_CN(t-1) + residual + post-event term`.
-- Rest of world: mean growth over the last ten years (+6.70) plus residual.
-- Any seat held by a committee: the committed rate.
+- The United States, when run by the model, grows at the pathway rate plus a residual. The rate is the compound rate for 2015 to 2025 (+1.03) under accretion and demonstration, and the 1988 to 1998 rate (−3.76) under retrenchment.
+- China, when run by the model, grows at the compound rate for 2015 to 2025 (+5.50) plus a residual.
+- An allied tier, when run by the model, grows at `b0 + b_us * g_US(t-1) + b_cn * g_CN(t-1) + residual + post-event term`.
+- Rest of world grows at its mean rate over the last ten years (+6.70) plus a residual.
+- Any seat held by a committee grows at the committed rate.
 
-Estimated coefficients (standard errors), 1991 to 2025:
+The estimated coefficients for 1991 to 2025 are as follows, with standard errors in parentheses.
 
 | Tier | Response to US growth | Response to China growth | R squared |
 |---|---|---|---|
@@ -85,7 +85,7 @@ Residuals are the estimation residuals of the six blocks on the common sample 19
 
 ### 5.2 Reserves
 
-Quarterly. The US dollar share moves in percentage points and the renminbi share in log-odds:
+The reserve channel is quarterly. The US dollar share moves in percentage points and the renminbi share moves in log-odds:
 
 `change = c0 + c1 * dlog(China / United States expenditure) + residual`
 
@@ -104,12 +104,12 @@ The event quarter within the year is part of the sealed record.
 
 ## 6. Sealed record
 
-At the start, one draw is made from the exercise seed and held until the debrief:
+At the start, one draw is made from the exercise seed and held until the debrief. It has four parts.
 
-1. A pathway, with probability one third each. A retrenchment draw applies only if the United States is run by the model. A demonstration draw applies only if China is run by the model; its year is uniform on 2028 to 2031.
-2. Coefficients for each allied tier, from the joint normal distribution with the estimated covariance.
-3. The two reserve coefficients for each currency, drawn the same way.
-4. The residual years for 2026 to 2035 and the quarterly reserve residuals.
+1. A pathway is drawn, with probability one third each. A retrenchment draw applies only if the United States is run by the model. A demonstration draw applies only if China is run by the model, and its year is uniform on 2028 to 2031.
+2. Coefficients for each allied tier are drawn from the joint normal distribution with the estimated covariance.
+3. The two reserve coefficients for each currency are drawn the same way.
+4. The residual years for 2026 to 2035 and the quarterly reserve residuals are drawn.
 
 The same seed and the same commitments reproduce the same exercise.
 
@@ -132,17 +132,17 @@ Each seat paper shows a staff estimate: 2,000 draws of the model from the publis
 
 Pathway probabilities start at one third each and are revised at each decision point:
 
-- On published US growth. Each published year is treated as an independent normal draw around the pathway rate, with the standard deviation of the US residual sample. Accretion and demonstration share a rate and split their joint probability equally.
-- On demonstrations. If none has occurred, draws that place one in a past year are rejected.
+- The probabilities are revised on published US growth. Each published year is treated as an independent normal draw around the pathway rate, with the standard deviation of the US residual sample. Accretion and demonstration share a rate and split their joint probability equally.
+- The probabilities are also conditioned on demonstrations. If none has occurred, draws that place one in a past year are rejected.
 
 ## 9. Interval statements
 
-Each period a committee states an 80 percent interval for two quantities:
+Each period a committee states an 80 percent interval for two quantities.
 
-1. The US dollar reserve share at the last quarter that will be published at the next decision point (2035-Q4 in period V).
-2. Combined real growth of NATO Europe and the Indo-Pacific allies in the first year of the period.
+1. The first is the US dollar reserve share at the last quarter that will be published at the next decision point (2035-Q4 in period V).
+2. The second is the combined real growth of NATO Europe and the Indo-Pacific allies in the first year of the period.
 
-Each is scored by the Winkler rule: interval width plus 10 times the distance by which the outcome falls outside. Lower is better. The intervals are prefilled with the staff 10th and 90th percentiles; a committee that leaves them unchanged receives the staff score. The staff score is reported beside each committee score.
+Each is scored by the Winkler rule, which is the interval width plus 10 times the distance by which the outcome falls outside. A lower score is better. The intervals are prefilled with the staff 10th and 90th percentiles; a committee that leaves them unchanged receives the staff score. The staff score is reported beside each committee score.
 
 ## 10. Goals, objectives, and favorable outcomes
 
@@ -155,15 +155,15 @@ Each seat has one goal, two objectives measured at 2035, and one resource limit.
 | United States | Retain the expenditure margin over China and the reserve position of the dollar. | China to United States expenditure ratio at or below 0.553 | US dollar reserve share, 2035-Q4, at or above 50.36 percent | 10,944.8 |
 | China | Close the expenditure gap with the United States and raise the reserve role of the renminbi. | China to United States expenditure ratio at or above 0.553 | Renminbi reserve share, 2035-Q4, at or above 4.59 percent | 5,188.2 |
 | NATO Europe | Keep the coalition's expenditure margin over China while the United States continues to carry its share. | Coalition to China expenditure ratio at or above 3.31 | United States share of coalition expenditure at or above 53.1 percent | 6,617.7 |
-| Indo-Pacific allies | As NATO Europe. | As NATO Europe. | As NATO Europe. | 2,069.7 |
+| Indo-Pacific allies | Same as NATO Europe | Same as NATO Europe | Same as NATO Europe | 2,069.7 |
 
 The coalition is the United States, NATO Europe, and the Indo-Pacific allies.
 
-Outcome for a seat:
+The outcome for a seat is defined as follows.
 
-- Favorable: every objective met and cumulative outlays within the resource limit.
-- Mixed: at least one objective met.
-- Unfavorable: no objective met.
+- The outcome is favorable when every objective is met and cumulative outlays are within the resource limit.
+- The outcome is mixed when at least one objective is met.
+- The outcome is unfavorable when no objective is met.
 
 Outcomes are assessed seat by seat and are not ranked against each other. The objectives of the two principals on the expenditure ratio are opposed; the allied objectives are not opposed to either. Interval calibration (section 9) is reported separately and does not enter the outcome.
 
@@ -183,20 +183,20 @@ The record is classed as demonstration if a demonstration occurred. Otherwise it
 
 With every seat run by the model and the pathway imposed, the engine must reproduce the published 2035 medians of release 1.1.0. `reference.js` checks 27 medians (six blocks, two reserve shares, and the allied share of world expenditure, for three pathways) at 50,000 draws each and stops the build if any is outside tolerance (3 percent for levels, 0.35 points for reserve shares, 0.6 points for the allied share).
 
-Result at this release: the largest deviation is 0.97 percent for expenditure levels and 0.05 points for shares. The two implementations use different random number generators and the published medians rest on 10,000 draws, so the difference is sampling error. The carry-over of the 2025 ratio change into 2026 (section 5.2) is within the same tolerance. The full table is in `reference.json` under `parity`.
+At this release, the largest deviation is 0.97 percent for expenditure levels and 0.05 points for shares. The two implementations use different random number generators and the published medians rest on 10,000 draws, so the difference is sampling error. The carry-over of the 2025 ratio change into 2026 (section 5.2) is within the same tolerance. The full table is in `reference.json` under `parity`.
 
 ## 14. Estimated and assumed
 
-Estimated in release 1.1.0 and used unchanged: the allied response equations and their covariance; the reserve regressions and their covariance; all residual pools; the pathway rates; the 2022 episode quantities; base levels.
+The following are estimated in release 1.1.0 and used unchanged: the allied response equations and their covariance, the reserve regressions and their covariance, all residual pools, the pathway rates, the 2022 episode quantities, and the base levels.
 
-Assumed by the exercise:
+The exercise assumes the following.
 
 - A committed rate is realized exactly.
-- The pathway probabilities are equal.
+- The pathway probabilities start equal.
 - The commitment range is the 5th to 95th percentile of observed growth.
 - One rate governs each period.
-- The goals, objectives, and resource limits in section 10.
-- Committees holding allied seats choose their own response to a demonstration; the measured post-2022 term applies only to tiers run by the model.
+- The goals, objectives, and resource limits in section 10 are design assumptions.
+- Committees holding allied seats choose their own response to a demonstration, and the measured post-2022 term applies only to tiers run by the model.
 - The reserve regressor is computed from the realized path.
 
 ## 15. Limitations
@@ -216,7 +216,7 @@ python build_data.py --model ../primacy-premium   # refresh model_inputs.json (o
 python build_data.py                              # payload.json
 node reference.js                                 # parity check, reference.json
 python build_social.py                            # share image
-python build_page.py                              # index.html
+python build_page.py --publish ../primacy-premium/committee-exercise   # index.html, and the published copy
 python tests/playthrough.py                       # automated play to the debrief
 ```
 
@@ -231,3 +231,5 @@ Politis, D. N., and J. P. Romano. 1994. The stationary bootstrap. *Journal of th
 Winkler, R. L. 1972. A decision-theoretic approach to interval estimation. *Journal of the American Statistical Association* 67(337): 187 to 191.
 
 Data sources and their citation requirements are listed in `REFERENCES.md` of the model repository.
+
+The author is Alyssa I. Agard.
