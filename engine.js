@@ -289,10 +289,11 @@
    * o.endYear   last year to simulate
    * o.usdQ      target quarter index for the dollar share
    * o.growthYear target year for combined allied real growth
+   * The result also carries proj, the median of each measure at o.endYear.
    */
   function estimate(P, o) {
     var rng = Rng(o.seed), usd = [], grow = [], ratio = [], path = {};
-    var qi, n = o.n, i;
+    var qi, n = o.n, i, proj = {}, med = {};
     for (qi = o.start.q + 1; qi <= o.usdQ; qi++) path[qi] = [];
     for (i = 0; i < n; i++) {
       var W = drawWorld(P, rng, { usModel: o.usModel, cnModel: o.cnModel,
@@ -314,6 +315,8 @@
         }
       }
       ratio.push(s.lvl[CN] / s.lvl[US]);
+      var mm = measures(P, s);
+      for (var key in mm) (proj[key] = proj[key] || []).push(mm[key]);
     }
     var fan = [];
     for (qi = o.start.q + 1; qi <= o.usdQ; qi++) {
@@ -326,7 +329,9 @@
       return v.length ? [quantile(v, 0.1), quantile(v, 0.5), quantile(v, 0.9)]
                       : null;
     };
-    return { fan: fan, usd: q3(su), growth: q3(sg), ratio: q3(sr), n: n };
+    for (var k2 in proj) med[k2] = quantile(sortNum(proj[k2]), 0.5);
+    return { fan: fan, usd: q3(su), growth: q3(sg), ratio: q3(sr), n: n,
+             proj: med };
   }
 
   /*

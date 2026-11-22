@@ -48,8 +48,10 @@ async def play(pg, name, cfg, shots, seed=20260724):
     await pg.goto(PAGE.as_uri())
     await pg.wait_for_selector("#convene")
     for i in range(4):
-        v = "1" if i in cfg["seats"] else "0"
-        await pg.check(f'input[name=seat{i}][value="{v}"]')
+        want = "true" if i in cfg["seats"] else "false"
+        card = pg.locator(f'.placard[data-seat="{i}"]')
+        if await card.get_attribute("aria-pressed") != want:
+            await card.click()
     await pg.fill("#seed", str(seed))
     if shots:
         await shot(pg, f"{shots}/{name}_0_front.png")
@@ -78,13 +80,15 @@ async def play(pg, name, cfg, shots, seed=20260724):
         if k < 4:
             await pg.wait_for_selector("#next")
             if shots and k == 1:
+                await pg.wait_for_timeout(1300)
                 await shot(pg, f"{shots}/{name}_resolution.png")
             await pg.click("#next")
             if len(cfg["seats"]) > 1:
                 await pg.click("#handoff-btn")
+    await pg.click("#unseal")
     await pg.wait_for_selector("#save")
     if shots:
-        await pg.wait_for_timeout(500)
+        await pg.wait_for_timeout(900)
         await shot(pg, f"{shots}/{name}_debrief.png")
     return await pg.evaluate(
         "() => { const g = CX.game; return JSON.stringify({"
